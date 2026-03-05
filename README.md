@@ -16,12 +16,24 @@ or add to `settings.json`:
 
 ## what's included
 
-| type | name | description |
-|------|------|-------------|
-| skill | [`simplify`](#simplify) | review changed code for reuse, quality, and efficiency, then fix issues |
-| skill | [`batch`](#batch) | orchestrate large-scale parallel changes across a codebase |
-| extension | [`qmd`](#qmd) | index docs/code for semantic search via [qmd](https://github.com/badlogic/qmd) |
-| prompt | [`jjcommit`](#jjcommit) | atomic commit workflow for jj (jujutsu) |
+### skills
+
+| name | description |
+|------|-------------|
+| [`simplify`](#simplify) | review changed code for reuse, quality, and efficiency, then fix issues |
+| [`batch`](#batch) | orchestrate large-scale parallel changes across a codebase |
+
+### extensions
+
+| name | description |
+|------|-------------|
+| [`qmd`](#qmd) | index docs/code for semantic search via [qmd](https://github.com/tobi/qmd) |
+
+### prompts
+
+| name | description |
+|------|-------------|
+| [`jjcommit`](#jjcommit) | atomic commit workflow for jj (jujutsu) |
 
 ---
 
@@ -54,7 +66,7 @@ orchestrates large-scale changes across a codebase. decomposes work into 5–30 
 
 ### qmd
 
-[qmd](https://github.com/badlogic/qmd) integration — indexes documentation and code for semantic search. requires `qmd` on PATH.
+[qmd](https://github.com/tobi/qmd) integration — indexes documentation and code for semantic search. requires `qmd` on PATH.
 
 | tool | description |
 |------|-------------|
