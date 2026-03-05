@@ -14,6 +14,17 @@ or add to `settings.json`:
 { "packages": ["git:github.com/fosskar/pi-pack"] }
 ```
 
+## what's included
+
+| type | name | description |
+|------|------|-------------|
+| skill | [`simplify`](#simplify) | review changed code for reuse, quality, and efficiency, then fix issues |
+| skill | [`batch`](#batch) | orchestrate large-scale parallel changes across a codebase |
+| extension | [`qmd`](#qmd) | index docs/code for semantic search via [qmd](https://github.com/badlogic/qmd) |
+| prompt | [`jjcommit`](#jjcommit) | atomic commit workflow for jj (jujutsu) |
+
+---
+
 ## skills
 
 ### simplify
