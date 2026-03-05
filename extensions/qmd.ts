@@ -8,6 +8,22 @@ import { Type } from "@sinclair/typebox";
 import { StringEnum } from "@mariozechner/pi-ai";
 
 export default function (pi: ExtensionAPI) {
+  // make the agent aware of indexed collections on every turn
+  pi.on("before_agent_start", async (event) => {
+    const res = await pi.exec("qmd", ["collection", "list"], { timeout: 5 });
+    if (res.code !== 0 || !res.stdout?.trim()) return;
+
+    return {
+      systemPrompt:
+        event.systemPrompt +
+        "\n\n## qmd knowledge base\n" +
+        "you have a local qmd index with searchable documentation. " +
+        "use `qmd_query` to search it when the user asks about topics that might be covered.\n\n" +
+        "collections:\n" +
+        res.stdout.trim(),
+    };
+  });
+
   async function runQmd(args: string[], signal?: AbortSignal) {
     const res = await pi.exec("qmd", args, { signal, timeout: 120 });
     const output =
