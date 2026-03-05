@@ -20,7 +20,7 @@ or add to `settings.json`:
 
 | name | description |
 |------|-------------|
-| [`simplify`](#simplify) | review changed code for reuse, quality, and efficiency, then fix issues |
+| [`simplify`](#simplify) | review code for reuse, quality, and efficiency, then fix issues |
 | [`batch`](#batch) | orchestrate large-scale parallel changes across a codebase |
 
 ### extensions
@@ -41,16 +41,17 @@ or add to `settings.json`:
 
 ### simplify
 
-reviews recently changed files for code reuse, quality, and efficiency issues, then fixes them. run after implementing a feature or bug fix. pass optional text to focus on specific concerns.
+reviews code for reuse, quality, and efficiency issues, then fixes them. works on specific files/modules, recent changes, or whatever you point it at.
 
 ```
-/skill:simplify
-/skill:simplify focus on memory efficiency
+/skill:simplify                          # falls back to git diff
+/skill:simplify modules/auth/            # review a specific module
+/skill:simplify focus on memory leaks    # review with a specific focus
 ```
 
 performs three reviews:
-- **code reuse** — finds existing utilities that could replace new code
-- **code quality** — flags redundant state, parameter sprawl, copy-paste, leaky abstractions, stringly-typed code
+- **code reuse** — finds existing utilities that could replace code, flags duplicated functionality
+- **code quality** — flags redundant state, parameter sprawl, copy-paste, leaky abstractions, stringly-typed code, dead code
 - **efficiency** — catches unnecessary work, missed concurrency, hot-path bloat, TOCTOU anti-patterns, memory leaks
 
 ### batch
