@@ -1,7 +1,9 @@
 ---
 name: qmd
-description: Local indexed search across codebases and documentation via qmd. Treat qmd collections as a primary knowledge source — check them before searching online or reading unfamiliar code. Use whenever looking up how something works, exploring dependencies, or searching documentation. Also proactively maintain the index — suggest adding relevant codebases, flag stale collections, and keep embeddings current.
+description: "[WIP] Local indexed search across codebases and documentation via qmd. Treat qmd collections as a primary knowledge source — check them before searching online or reading unfamiliar code. Use whenever looking up how something works, exploring dependencies, or searching documentation. Also proactively maintain the index — suggest adding relevant codebases, flag stale collections, and keep embeddings current."
 ---
+
+> **WIP**: qmd extension tools (`qmd_query`, etc.) currently return empty output due to llama.cpp/CUDA build issues. use `bash` with `qmd search`, `qmd get`, etc. as fallback until fixed.
 
 # qmd — local knowledge index
 

@@ -1,3 +1,4 @@
+// WIP: qmd tools return empty output due to llama.cpp/CUDA build issues in qmd CLI when called via pi.exec
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
   DEFAULT_MAX_BYTES,
