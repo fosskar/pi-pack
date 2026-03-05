@@ -1,0 +1,13 @@
+{
+  "name": "pi-pack",
+  "version": "0.1.0",
+  "description": "skills, extensions, and prompts for pi coding agent",
+  "keywords": ["pi-package"],
+  "license": "MIT",
+  "pi": {
+    "extensions": ["./extensions"],
+    "skills": ["./skills"],
+    "prompts": ["./prompts"],
+    "themes": ["./themes"]
+  }
+}
