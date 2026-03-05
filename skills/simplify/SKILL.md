@@ -15,7 +15,7 @@ Run `git diff` (or `git diff HEAD` if there are staged changes) to see what chan
 
 ## Phase 2: Review
 
-Perform all three reviews on the diff. If the codebase and diff are small enough, do them sequentially. For larger changes, consider using subagents in parallel.
+Perform all three reviews on the diff sequentially.
 
 ### Review 1: Code Reuse
 
