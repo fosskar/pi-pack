@@ -22,6 +22,7 @@ or add to `settings.json`:
 |------|-------------|
 | [`simplify`](#simplify) | review code for reuse, quality, and efficiency, then fix issues |
 | [`batch`](#batch) | orchestrate large-scale parallel changes across a codebase |
+| [`qmd`](#qmd-skill) | search strategy and maintenance for qmd-indexed collections |
 
 ### extensions
 
@@ -38,6 +39,17 @@ or add to `settings.json`:
 ---
 
 ## skills
+
+### qmd (skill) {#qmd-skill}
+
+teaches the agent to treat qmd collections as a primary knowledge source — check local indexes before searching online. also handles proactive maintenance: suggesting new collections, flagging stale indexes, reminding to refresh after dependency updates.
+
+the qmd *extension* provides the tools; this *skill* provides the search strategy and maintenance awareness.
+
+```
+# automatic — agent uses qmd when looking things up
+# no explicit invocation needed
+```
 
 ### simplify
 
