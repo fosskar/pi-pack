@@ -7,15 +7,13 @@ description: Local indexed search across codebases and documentation via qmd. Tr
 
 qmd indexes codebases and documentation locally with keyword, semantic, and hybrid search. collections may contain upstream dependencies, wikis, docs, or any codebase the user has indexed.
 
-## search priority
+## when to search where
 
-when looking something up:
+- **current repo** (`rg`, `find`, `read`) — default for anything in the working directory. fastest.
+- **qmd** — when the answer is likely in an upstream dependency, framework source, wiki, or docs that aren't in the current repo. use instead of fetching from GitHub/docs sites.
+- **internet** (`fetch`) — last resort, when neither local repo nor qmd collections cover it.
 
-1. **qmd first** — check if a relevant collection exists (`qmd_collection_list`). if yes, search it.
-2. **local repo** (`rg`, `find`, `read`) — for code in the current working directory.
-3. **internet** (`fetch`) — only if qmd and local search don't have what's needed.
-
-this matters because qmd collections often contain the exact upstream source or docs that would otherwise require an internet lookup, and the local index is faster and more reliable.
+don't check `qmd_collection_list` every time — remember what's indexed from prior calls and only re-check if unsure. if you haven't checked yet in a session, one early check is fine to orient yourself.
 
 ## examples — when to search qmd
 
