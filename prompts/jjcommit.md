@@ -12,3 +12,4 @@ rules:
 - no conventional commit prefixes.
 - prefix docs changes with `docs:`.
 - ensure working copy ends on a fresh empty change (if last operation was `jj describe`, run `jj new`).
+- dont make it more complicated than it is.
