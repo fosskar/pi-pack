@@ -88,14 +88,17 @@ orchestrates large-scale changes across a codebase. decomposes work into 5–30 
 
 memory behavior:
 - auto retrieves only relevant memory per prompt (not full memory dump)
-- auto saves durable turn summaries with dedupe
-- auto-save rate limit: max 1 auto note / 5 min
+- memory files stored globally at `~/.pi/agent/qmd-memory/<project-hash>/` (no repo spam)
+- autosave default: on. can disable explicitly.
+- autosave triggers only on durable-signal keywords (`remember`, `preference`, `decision`, `rule`, `convention`, `always`, `never`)
+- autosave rate limit (when enabled): max 1 auto note / 5 min
 - degraded fallback: if hybrid/vector fails, switches to lexical-only mode and shows reason in `/memory status`
 
 quick commands:
 - `/memory help` — show memory subcommands
-- `/memory status` — on/off, mode, cooldown, file count
+- `/memory status` — on/off, autosave mode, cooldown, file count
 - `/memory on` / `/memory off`
+- `/memory autosave on` / `/memory autosave off`
 - `/memory rebuild` — refresh memory index
 
 memory tools:

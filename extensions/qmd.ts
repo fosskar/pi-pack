@@ -1,5 +1,6 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { homedir } from "node:os";
 import { createHash } from "node:crypto";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import {
@@ -28,11 +29,12 @@ const cwd = process.cwd();
 const projectSlug = basename(cwd).toLowerCase().replace(/[^a-z0-9._-]/g, "-") || "project";
 const projectHash = createHash("sha1").update(cwd).digest("hex").slice(0, 8);
 const memoryCollection = `pi-memory-${projectSlug}-${projectHash}`;
-const memoryDir = join(cwd, ".pi", "qmd-memory");
+const memoryDir = join(homedir(), ".pi", "agent", "qmd-memory", `${projectSlug}-${projectHash}`);
 const AUTO_SAVE_MIN_INTERVAL_MS = 5 * 60 * 1000;
 
 export default function (pi: ExtensionAPI) {
   let enabled = true;
+  let autoSaveEnabled = true;
   let dirty = false;
   let ensured = false;
   let degradedMode = false;
@@ -83,12 +85,46 @@ export default function (pi: ExtensionAPI) {
     return degradedMode ? "lexical-only (degraded)" : "hybrid";
   }
 
+  function hasDurableSignal(userText: string, assistantText: string) {
+    const text = `${userText}\n${assistantText}`.toLowerCase();
+    const patterns = [
+      /\bremember\b/,
+      /\bpreference\b/,
+      /\bdecision\b/,
+      /\brule\b/,
+      /\bconvention\b/,
+      /\balways\b/,
+      /\bnever\b/,
+    ];
+    return patterns.some((p) => p.test(text));
+  }
+
   async function ensureMemoryCollection(signal?: AbortSignal) {
     if (ensured) return;
     await mkdir(memoryDir, { recursive: true });
 
     const list = await runQmd(["collection", "list"], signal, 20);
     const hasCollection = (list.stdout || "").includes(memoryCollection);
+
+    if (hasCollection) {
+      const show = await runQmd(["collection", "show", memoryCollection], signal, 20);
+      const pathLine = (show.stdout || "").split("\n").find((line) => line.trim().startsWith("Path:"));
+      const currentPath = pathLine?.split("Path:")[1]?.trim();
+      if (currentPath && currentPath !== memoryDir) {
+        await runQmd(["collection", "remove", memoryCollection], signal, 40);
+        await runQmd([
+          "collection",
+          "add",
+          memoryDir,
+          "--name",
+          memoryCollection,
+          "--mask",
+          "**/*.md",
+        ], signal, 60);
+        dirty = true;
+      }
+    }
+
     if (!hasCollection) {
       await runQmd([
         "collection",
@@ -222,7 +258,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("agent_end", async (event) => {
-    if (!enabled) return;
+    if (!enabled || !autoSaveEnabled) return;
 
     const userText = event.messages
       .filter((m: any) => m.role === "user")
@@ -241,7 +277,7 @@ export default function (pi: ExtensionAPI) {
       .trim();
 
     if (!userText || !assistantText) return;
-    if (assistantText.length < 120) return;
+    if (!hasDurableSignal(userText, assistantText)) return;
 
     const now = Date.now();
     if (now - lastAutoSaveAt < AUTO_SAVE_MIN_INTERVAL_MS) return;
@@ -255,17 +291,28 @@ export default function (pi: ExtensionAPI) {
       assistantText.slice(0, 3000),
     ].join("\n");
 
-    const saved = await saveMemoryNote(title, body, ["auto", "turn"]);
+    const saved = await saveMemoryNote(title, body, ["auto", "durable"]);
     if (saved.saved) lastAutoSaveAt = now;
   });
 
   pi.registerCommand("memory", {
-    description: "memory controls: help|status|on|off|rebuild",
+    description: "memory controls: help|status|on|off|autosave on|autosave off|rebuild",
     handler: async (args, ctx) => {
       const sub = (args || "status").trim().toLowerCase();
 
       if (sub === "help") {
-        ctx.ui.notify("/memory help | status | on | off | rebuild", "info");
+        ctx.ui.notify("/memory help | status | on | off | autosave on | autosave off | rebuild | autosave triggers: remember/preference/decision/rule/convention/always/never", "info");
+        return;
+      }
+
+      if (sub === "autosave on") {
+        autoSaveEnabled = true;
+        ctx.ui.notify("memory autosave enabled", "success");
+        return;
+      }
+      if (sub === "autosave off") {
+        autoSaveEnabled = false;
+        ctx.ui.notify("memory autosave disabled", "warning");
         return;
       }
 
@@ -298,7 +345,7 @@ export default function (pi: ExtensionAPI) {
         ? ` | mode=${currentModeLabel()} | reason=${degradedReason}`
         : ` | mode=${currentModeLabel()}`;
       ctx.ui.notify(
-        `memory: ${enabled ? "on" : "off"} | collection=${memoryCollection} | files=${files.length} | dirty=${dirty} | autosave-cooldown=${waitSec}s${degraded}`,
+        `memory: ${enabled ? "on" : "off"} | autosave=${autoSaveEnabled ? "on" : "off"} | collection=${memoryCollection} | files=${files.length} | dirty=${dirty} | autosave-cooldown=${waitSec}s${degraded}`,
         "info",
       );
     },
@@ -529,6 +576,7 @@ export default function (pi: ExtensionAPI) {
       const waitMs = Math.max(0, AUTO_SAVE_MIN_INTERVAL_MS - (Date.now() - lastAutoSaveAt));
       const text = [
         `enabled: ${enabled}`,
+        `autosave_enabled: ${autoSaveEnabled}`,
         `mode: ${currentModeLabel()}`,
         ...(degradedMode ? [`degraded_reason: ${degradedReason}`] : []),
         `collection: ${memoryCollection}`,
@@ -541,6 +589,7 @@ export default function (pi: ExtensionAPI) {
         content: [{ type: "text" as const, text }],
         details: {
           enabled,
+          autoSaveEnabled,
           mode: currentModeLabel(),
           degradedMode,
           degradedReason,
