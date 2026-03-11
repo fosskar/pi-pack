@@ -79,18 +79,45 @@ orchestrates large-scale changes across a codebase. decomposes work into 5–30 
 
 ### qmd
 
-[qmd](https://github.com/tobi/qmd) integration — indexes documentation and code for semantic search. requires `qmd` on PATH.
+[qmd](https://github.com/tobi/qmd) integration — indexes docs/code + adds durable project memory.
 
-| tool | description |
-|------|-------------|
-| `qmd_query` | search index (keyword, vector, or hybrid) |
-| `qmd_get` | retrieve doc by path or #docid |
-| `qmd_update` | re-index all collections, optionally embed |
-| `qmd_collection_add` | add a directory/file as a named collection with optional glob mask |
-| `qmd_collection_remove` | remove a collection |
-| `qmd_collection_list` | list all collections |
-| `qmd_status` | show index overview |
-| `qmd_embed` | create/refresh vector embeddings |
+memory behavior:
+- auto retrieves only relevant memory per prompt (not full memory dump)
+- auto saves durable turn summaries with dedupe
+- auto-save rate limit: max 1 auto note / 5 min
+- degraded fallback: if hybrid/vector fails, switches to lexical-only mode and shows reason in `/memory status`
+
+quick commands:
+- `/memory status` — on/off, mode, cooldown, file count
+- `/memory on` / `/memory off`
+- `/memory rebuild` — refresh memory index
+
+memory tools:
+- `memory_search` | search persistent project memory
+- `memory_save` | save durable memory note (deduped)
+- `memory_status` | integration health + mode
+- `memory_forget` | delete matching memory notes
+
+qmd tools:
+- `qmd_query` | search index (keyword/vector/hybrid)
+- `qmd_get` | retrieve doc by path or #docid
+- `qmd_update` | re-index all collections, optionally embed
+- `qmd_collection_add` | add dir/file as collection
+- `qmd_collection_remove` | remove collection
+- `qmd_collection_list` | list collections
+- `qmd_status` | index overview
+- `qmd_embed` | create/refresh embeddings
+
+fix semantic/hybrid backend (common on NixOS):
+```bash
+mkdir -p ~/.cache/node-llama-cpp/xpack
+nix shell nixpkgs#gnumake nixpkgs#cmake nixpkgs#gcc nixpkgs#python3 -c qmd query "test"
+```
+if still on old qmd, update to latest:
+```bash
+npm install -g @tobilu/qmd@latest
+qmd --version
+```
 
 ## prompts
 
