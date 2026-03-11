@@ -22,13 +22,13 @@ or add to `settings.json`:
 |------|-------------|
 | [`simplify`](#simplify) | review code for reuse, quality, and efficiency, then fix issues |
 | [`batch`](#batch) | orchestrate large-scale parallel changes across a codebase |
-| [`qmd`](#qmd-skill) | search strategy and maintenance for qmd-indexed collections |
+| [`qmd`](#qmd-skill) | persistent memory workflow: retrieve/save/forget durable project knowledge |
 
 ### extensions
 
 | name | description |
 |------|-------------|
-| [`qmd`](#qmd) | index docs/code for semantic search via [qmd](https://github.com/tobi/qmd) |
+| [`qmd`](#qmd) | qmd lookup + persistent project memory integration |
 
 ### prompts
 
@@ -42,13 +42,18 @@ or add to `settings.json`:
 
 ### qmd (skill) {#qmd-skill}
 
-teaches the agent to treat qmd collections as a primary knowledge source — check local indexes before searching online. also handles proactive maintenance: suggesting new collections, flagging stale indexes, reminding to refresh after dependency updates.
+memory-first behavior layer for the qmd extension.
 
-the qmd *extension* provides the tools; this *skill* provides the search strategy and maintenance awareness.
+what it teaches:
+- retrieve relevant memory first (`memory_search`), never dump full memory
+- save durable decisions/preferences (`memory_save`)
+- correct stale memory (`memory_forget` + new save)
+- use qmd lookups (`qmd_query`, `qmd_get`) for indexed docs/code
 
 ```
-# automatic — agent uses qmd when looking things up
-# no explicit invocation needed
+# usually auto-applied
+# can still invoke manually:
+/skill:qmd
 ```
 
 ### simplify
@@ -88,6 +93,7 @@ memory behavior:
 - degraded fallback: if hybrid/vector fails, switches to lexical-only mode and shows reason in `/memory status`
 
 quick commands:
+- `/memory help` — show memory subcommands
 - `/memory status` — on/off, mode, cooldown, file count
 - `/memory on` / `/memory off`
 - `/memory rebuild` — refresh memory index
