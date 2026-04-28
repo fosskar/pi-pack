@@ -10,6 +10,7 @@ $ARGUMENTS
 ## Phase 1: Identify Scope
 
 Determine what to review:
+
 - If the user specified files, modules, or directories — review those
 - If the user described a concern — find the relevant code
 - If nothing was specified — fall back to `git diff` (or `git diff HEAD` if staged) to review recent changes

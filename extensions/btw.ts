@@ -40,16 +40,30 @@ const log: Answer[] = [];
 function makeContext(ctx: ExtensionContext, question: string, fresh: boolean) {
   if (fresh) {
     return {
-      systemPrompt: "answer concisely. no filler. 1-5 sentences unless code is needed.",
-      messages: [{ role: "user" as const, content: [{ type: "text" as const, text: question }], timestamp: Date.now() }],
+      systemPrompt:
+        "answer concisely. no filler. 1-5 sentences unless code is needed.",
+      messages: [
+        {
+          role: "user" as const,
+          content: [{ type: "text" as const, text: question }],
+          timestamp: Date.now(),
+        },
+      ],
     };
   }
-  const sc = buildSessionContext(ctx.sessionManager.getEntries(), ctx.sessionManager.getLeafId());
+  const sc = buildSessionContext(
+    ctx.sessionManager.getEntries(),
+    ctx.sessionManager.getLeafId(),
+  );
   return {
     systemPrompt: ctx.getSystemPrompt(),
     messages: [
       ...sc.messages,
-      { role: "user" as const, content: [{ type: "text" as const, text: question }], timestamp: Date.now() },
+      {
+        role: "user" as const,
+        content: [{ type: "text" as const, text: question }],
+        timestamp: Date.now(),
+      },
     ],
   };
 }
@@ -63,20 +77,30 @@ async function doAsk(
   const model = ctx.model!;
   const apiKey = await ctx.modelRegistry.getApiKey(model);
   if (!apiKey) throw new Error(`no key for ${model.provider}/${model.id}`);
-  const thinking = (ctx as any).getThinkingLevel?.() as "off" | AiThinkingLevel | undefined;
+  const thinking = (ctx as any).getThinkingLevel?.() as
+    | "off"
+    | AiThinkingLevel
+    | undefined;
   const reasoning = thinking && thinking !== "off" ? thinking : undefined;
-  const res = await streamSimple(model, makeContext(ctx, question, fresh), { apiKey, reasoning, signal }).result();
+  const res = await streamSimple(model, makeContext(ctx, question, fresh), {
+    apiKey,
+    reasoning,
+    signal,
+  }).result();
   if (res.stopReason === "aborted") return null;
-  if (res.stopReason === "error") throw new Error(res.errorMessage || "btw failed");
+  if (res.stopReason === "error")
+    throw new Error(res.errorMessage || "btw failed");
   return res;
 }
 
 function extractText(msg: AssistantMessage): string {
-  return msg.content
-    .filter((p): p is { type: "text"; text: string } => p.type === "text")
-    .map((p) => p.text)
-    .join("\n")
-    .trim() || "(empty)";
+  return (
+    msg.content
+      .filter((p): p is { type: "text"; text: string } => p.type === "text")
+      .map((p) => p.text)
+      .join("\n")
+      .trim() || "(empty)"
+  );
 }
 
 function wrapText(text: string, width: number): string[] {
@@ -116,10 +140,17 @@ function wrapText(text: string, width: number): string[] {
   return out;
 }
 
-function panel(theme: Theme, width: number, body: string[], footer: string): string[] {
+function panel(
+  theme: Theme,
+  width: number,
+  body: string[],
+  footer: string,
+): string[] {
   const inner = Math.max(20, width - 2);
-  const pad = (s: string) => s + " ".repeat(Math.max(0, inner - visibleWidth(s)));
-  const row = (s: string) => `${theme.fg("border", "│")}${pad(s)}${theme.fg("border", "│")}`;
+  const pad = (s: string) =>
+    s + " ".repeat(Math.max(0, inner - visibleWidth(s)));
+  const row = (s: string) =>
+    `${theme.fg("border", "│")}${pad(s)}${theme.fg("border", "│")}`;
   return [
     theme.fg("border", `╭${"─".repeat(inner)}╮`),
     ...body.map(row),
@@ -132,10 +163,22 @@ function panel(theme: Theme, width: number, body: string[], footer: string): str
 // ── core ask flow ───────────────────────────────────────────
 
 async function handleBtw(q: string, fresh: boolean, ctx: ExtensionContext) {
-  if (!q.trim()) { ctx.hasUI && ctx.ui.notify("/btw <question> | /btw ctx <question> | /btw log", "warning"); return; }
-  if (!ctx.model) { ctx.hasUI && ctx.ui.notify("no model", "error"); return; }
+  if (!q.trim()) {
+    ctx.hasUI &&
+      ctx.ui.notify(
+        "/btw <question> | /btw ctx <question> | /btw log",
+        "warning",
+      );
+    return;
+  }
+  if (!ctx.model) {
+    ctx.hasUI && ctx.ui.notify("no model", "error");
+    return;
+  }
 
-  const modelShort = ctx.model.id.replace(/^claude-/, "").replace(/-\d{8}$/, "");
+  const modelShort = ctx.model.id
+    .replace(/^claude-/, "")
+    .replace(/-\d{8}$/, "");
   const mode = fresh ? "fresh" : "ctx";
 
   let entry: Answer | null = null;
@@ -147,58 +190,113 @@ async function handleBtw(q: string, fresh: boolean, ctx: ExtensionContext) {
         let answer = "";
         let tokens: { in: number; out: number } | undefined;
 
-        doAsk(ctx, q, fresh, abortCtrl.signal).then((res) => {
-          if (!res) { done(null); return; }
-          answer = extractText(res);
-          tokens = res.usage ? { in: res.usage.input, out: res.usage.output } : undefined;
-          phase = "done";
-        }).catch((e) => {
-          ctx.ui.notify(e instanceof Error ? e.message : String(e), "error");
-          done(null);
-        });
+        doAsk(ctx, q, fresh, abortCtrl.signal)
+          .then((res) => {
+            if (!res) {
+              done(null);
+              return;
+            }
+            answer = extractText(res);
+            tokens = res.usage
+              ? { in: res.usage.input, out: res.usage.output }
+              : undefined;
+            phase = "done";
+          })
+          .catch((e) => {
+            ctx.ui.notify(e instanceof Error ? e.message : String(e), "error");
+            done(null);
+          });
 
         return {
           handleInput(data: string) {
             if (matchesKey(data, Key.escape)) {
               if (phase === "loading") abortCtrl.abort();
-              done(phase === "done" ? { q, a: answer, model: modelShort, fresh, ts: Date.now(), tokens } : null);
+              done(
+                phase === "done"
+                  ? {
+                      q,
+                      a: answer,
+                      model: modelShort,
+                      fresh,
+                      ts: Date.now(),
+                      tokens,
+                    }
+                  : null,
+              );
               return;
             }
             if (phase === "done" && matchesKey(data, Key.enter)) {
-              done({ q, a: answer, model: modelShort, fresh, ts: Date.now(), tokens });
+              done({
+                q,
+                a: answer,
+                model: modelShort,
+                fresh,
+                ts: Date.now(),
+                tokens,
+              });
             }
           },
           render(width: number): string[] {
             const w = Math.max(24, width - 2);
             if (phase === "loading") {
-              return panel(theme, w, [
-                ` ${theme.fg("accent", theme.bold("btw"))} ${theme.fg("dim", `${modelShort} · ${mode}`)}`,
+              return panel(
+                theme,
+                w,
+                [
+                  ` ${theme.fg("accent", theme.bold("btw"))} ${theme.fg("dim", `${modelShort} · ${mode}`)}`,
+                  "",
+                  ` ${theme.fg("dim", "q:")} ${q}`,
+                  "",
+                  ` ${theme.fg("dim", "thinking...")}`,
+                ],
+                "esc cancel",
+              );
+            }
+            const tok = tokens
+              ? theme.fg("dim", ` · ${tokens.in}→${tokens.out}`)
+              : "";
+            return panel(
+              theme,
+              w,
+              [
+                ` ${theme.fg("accent", theme.bold("btw"))} ${theme.fg("dim", modelShort)}${tok}`,
                 "",
                 ` ${theme.fg("dim", "q:")} ${q}`,
                 "",
-                ` ${theme.fg("dim", "thinking...")}`,
-              ], "esc cancel");
-            }
-            const tok = tokens ? theme.fg("dim", ` · ${tokens.in}→${tokens.out}`) : "";
-            return panel(theme, w, [
-              ` ${theme.fg("accent", theme.bold("btw"))} ${theme.fg("dim", modelShort)}${tok}`,
-              "",
-              ` ${theme.fg("dim", "q:")} ${q}`,
-              "",
-              ...wrapText(answer, w - 2).map((l) => ` ${l}`),
-            ], "enter/esc dismiss");
+                ...wrapText(answer, w - 2).map((l) => ` ${l}`),
+              ],
+              "enter/esc dismiss",
+            );
           },
           invalidate() {},
           dispose() {},
         };
       },
-      { overlay: true, overlayOptions: { width: "72%", maxHeight: "65%", minWidth: 60, anchor: "top-center", margin: 1 } },
+      {
+        overlay: true,
+        overlayOptions: {
+          width: "72%",
+          maxHeight: "65%",
+          minWidth: 60,
+          anchor: "top-center",
+          margin: 1,
+        },
+      },
     );
   } else {
     const res = await doAsk(ctx, q, fresh);
     if (!res) return;
     const answer = extractText(res);
-    entry = { q, a: answer, model: modelShort, fresh, ts: Date.now(), tokens: res.usage ? { in: res.usage.input, out: res.usage.output } : undefined };
+    entry = {
+      q,
+      a: answer,
+      model: modelShort,
+      fresh,
+      ts: Date.now(),
+      tokens: res.usage
+        ? { in: res.usage.input, out: res.usage.output }
+        : undefined,
+    };
   }
 
   if (!entry) return;
@@ -217,35 +315,63 @@ export default function (pi: ExtensionAPI) {
     await ctx.ui.custom<void>(
       (_tui, theme, _kb, done) => ({
         handleInput(data: string) {
-          if (matchesKey(data, Key.escape) || matchesKey(data, Key.enter)) done(undefined);
+          if (matchesKey(data, Key.escape) || matchesKey(data, Key.enter))
+            done(undefined);
           if ((matchesKey(data, Key.left) || data === "k") && idx > 0) idx--;
-          if ((matchesKey(data, Key.right) || data === "j") && idx < log.length - 1) idx++;
+          if (
+            (matchesKey(data, Key.right) || data === "j") &&
+            idx < log.length - 1
+          )
+            idx++;
         },
         render(width: number): string[] {
           const e = log[idx]!;
           const w = Math.max(24, width - 2);
           const nav = theme.fg("dim", `${idx + 1}/${log.length}`);
-          const tok = e.tokens ? theme.fg("dim", ` · ${e.tokens.in}→${e.tokens.out}`) : "";
-          const time = new Date(e.ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-          return panel(theme, w, [
-            ` ${theme.fg("accent", theme.bold("btw"))} ${nav} ${theme.fg("dim", e.model + " " + time)}${tok}`,
-            "",
-            ` ${theme.fg("dim", "q:")} ${e.q}`,
-            "",
-            ...wrapText(e.a, w - 2).map((l) => ` ${l}`),
-          ], "←/→ or j/k navigate · enter/esc close");
+          const tok = e.tokens
+            ? theme.fg("dim", ` · ${e.tokens.in}→${e.tokens.out}`)
+            : "";
+          const time = new Date(e.ts).toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          return panel(
+            theme,
+            w,
+            [
+              ` ${theme.fg("accent", theme.bold("btw"))} ${nav} ${theme.fg("dim", e.model + " " + time)}${tok}`,
+              "",
+              ` ${theme.fg("dim", "q:")} ${e.q}`,
+              "",
+              ...wrapText(e.a, w - 2).map((l) => ` ${l}`),
+            ],
+            "←/→ or j/k navigate · enter/esc close",
+          );
         },
         invalidate() {},
         dispose() {},
       }),
-      { overlay: true, overlayOptions: { width: "72%", maxHeight: "65%", minWidth: 60, anchor: "top-center", margin: 1 } },
+      {
+        overlay: true,
+        overlayOptions: {
+          width: "72%",
+          maxHeight: "65%",
+          minWidth: 60,
+          anchor: "top-center",
+          margin: 1,
+        },
+      },
     );
   }
 
   async function runBtwInput(inputRaw: string, ctx: ExtensionContext) {
     const input = inputRaw.trim();
     if (!input) {
-      ctx.hasUI && ctx.ui.notify("/btw <question> | /btw ctx <question> | /btw log | /btw clear", "info");
+      ctx.hasUI &&
+        ctx.ui.notify(
+          "/btw <question> | /btw ctx <question> | /btw log | /btw clear",
+          "info",
+        );
       return;
     }
     if (input === "log") return await showLog(ctx);
@@ -254,8 +380,10 @@ export default function (pi: ExtensionAPI) {
       ctx.hasUI && ctx.ui.notify("btw history cleared", "info");
       return;
     }
-    if (input.startsWith("ctx ")) return await handleBtw(input.slice(4).trim(), false, ctx);
-    if (input.startsWith("fresh ")) return await handleBtw(input.slice(6).trim(), true, ctx);
+    if (input.startsWith("ctx "))
+      return await handleBtw(input.slice(4).trim(), false, ctx);
+    if (input.startsWith("fresh "))
+      return await handleBtw(input.slice(6).trim(), true, ctx);
     return await handleBtw(input, true, ctx);
   }
 
@@ -272,6 +400,4 @@ export default function (pi: ExtensionAPI) {
       if (ctx.hasUI) ctx.ui.setEditorText("/btw ");
     },
   });
-
-
 }

@@ -1,142 +1,109 @@
 # pi-pack
 
-skills, extensions, and prompts for [pi](https://github.com/badlogic/pi-mono) coding agent.
+shareable pi assets: skills, prompt templates, and extensions.
 
-## install
+## install with pi
 
 ```bash
-pi install git:github.com/fosskar/pi-pack
+pi install git:git@codeberg.org:fosskar/pi-pack.git
 ```
 
-or add to `settings.json`:
+or in `~/.pi/agent/settings.json`:
 
 ```json
-{ "packages": ["git:github.com/fosskar/pi-pack"] }
+{
+  "packages": ["git:git@codeberg.org:fosskar/pi-pack.git"]
+}
 ```
 
-## what's included
+pi loads:
+
+- `skills/`
+- `prompts/`
+- `extensions/`
+
+## use as nix flake source
+
+```nix
+{
+  inputs.pi-pack.url = "git+ssh://git@codeberg.org/fosskar/pi-pack.git";
+}
+```
+
+for pi via home-manager:
+
+```nix
+{
+  home.file = {
+    ".pi/agent/skills".source = "${inputs.pi-pack}/skills";
+    ".pi/agent/prompts".source = "${inputs.pi-pack}/prompts";
+    ".pi/agent/extensions".source = "${inputs.pi-pack}/extensions";
+  };
+}
+```
+
+for services that need one skill path:
+
+```nix
+{
+  services.opencrow.skills.osm = "${inputs.pi-pack}/skills/osm";
+}
+```
+
+## contents
 
 ### skills
 
-| name | description |
-|------|-------------|
-| [`simplify`](#simplify) | review code for reuse, quality, and efficiency, then fix issues |
-| [`batch`](#batch) | orchestrate large-scale parallel changes across a codebase |
-| [`qmd`](#qmd-skill) | persistent memory workflow: retrieve/save/forget durable project knowledge |
-
-### extensions
-
-| name | description |
-|------|-------------|
-| [`qmd`](#qmd) | qmd lookup + persistent project memory integration |
+| name        | purpose                                                     |
+| ----------- | ----------------------------------------------------------- |
+| `batch`     | decompose and coordinate large codebase changes             |
+| `caveman`   | answer tersely without dropping technical content           |
+| `grill-me`  | interrogate a plan one question at a time                   |
+| `jujutsu`   | reference workflow for jj                                   |
+| `osm`       | query OpenStreetMap / Nominatim / Overpass                  |
+| `paperless` | read-only paperless-ngx search and browsing                 |
+| `simplify`  | review code for reuse, quality, and efficiency, then fix it |
 
 ### prompts
 
-| name | description |
-|------|-------------|
-| [`jjcommit`](#jjcommit) | atomic commit workflow for jj (jujutsu) |
+| name          | purpose                       |
+| ------------- | ----------------------------- |
+| `commit.md`   | commit current work with jj   |
+| `jjcommit.md` | atomic jj commit workflow     |
+| `publish.md`  | publish committed work safely |
 
----
+### extensions
 
-## skills
+| name            | purpose                                       |
+| --------------- | --------------------------------------------- |
+| `btw.ts`        | ask current model a side question             |
+| `clipboard.ts`  | copy text via OSC52                           |
+| `diff.ts`       | open changed files in editor diff view        |
+| `oracle.ts`     | ask another configured model for review       |
+| `pi-pong.ts`    | run two models on a task until convergence    |
+| `pi-to-PI.ts`   | rewrite standalone `pi` to `PI` for Anthropic |
+| `safety-net.ts` | block or confirm dangerous tool calls         |
+| `sketch/`       | browser sketch pad for image input            |
 
-### qmd (skill) {#qmd-skill}
+## nix outputs
 
-memory-first behavior layer for the qmd extension.
-
-what it teaches:
-- retrieve relevant memory first (`memory_search`), never dump full memory
-- save durable decisions/preferences (`memory_save`)
-- correct stale memory (`memory_forget` + new save)
-- use qmd lookups (`qmd_query`, `qmd_get`) for indexed docs/code
-
-```
-# usually auto-applied
-# can still invoke manually:
-/skill:qmd
-```
-
-### simplify
-
-reviews code for reuse, quality, and efficiency issues, then fixes them. works on specific files/modules, recent changes, or whatever you point it at.
-
-```
-/skill:simplify                          # falls back to git diff
-/skill:simplify modules/auth/            # review a specific module
-/skill:simplify focus on memory leaks    # review with a specific focus
-```
-
-performs three reviews:
-- **code reuse** — finds existing utilities that could replace code, flags duplicated functionality
-- **code quality** — flags redundant state, parameter sprawl, copy-paste, leaky abstractions, stringly-typed code, dead code
-- **efficiency** — catches unnecessary work, missed concurrency, hot-path bloat, TOCTOU anti-patterns, memory leaks
-
-### batch
-
-orchestrates large-scale changes across a codebase. decomposes work into 5–30 independent units with a plan-then-execute flow. manual invocation only. requires git.
-
-```
-/skill:batch migrate from react to vue
-/skill:batch replace all uses of lodash with native equivalents
-```
-
-## extensions
-
-### qmd
-
-[qmd](https://github.com/tobi/qmd) integration — indexes docs/code + adds durable project memory.
-
-memory behavior:
-- auto retrieves only relevant memory per prompt (not full memory dump)
-- memory files stored globally at `~/.pi/agent/qmd-memory/<project-hash>/` (no repo spam)
-- autosave default: on. can disable explicitly.
-- autosave triggers only on durable-signal keywords (`remember`, `preference`, `decision`, `rule`, `convention`, `always`, `never`)
-- autosave rate limit (when enabled): max 1 auto note / 5 min
-- degraded fallback: if hybrid/vector fails, switches to lexical-only mode and shows reason in `/memory status`
-
-quick commands:
-- `/memory help` — show memory subcommands
-- `/memory status` — on/off, autosave mode, cooldown, file count
-- `/memory on` / `/memory off`
-- `/memory autosave on` / `/memory autosave off`
-- `/memory rebuild` — refresh memory index
-
-memory tools:
-- `memory_search` | search persistent project memory
-- `memory_save` | save durable memory note (deduped)
-- `memory_status` | integration health + mode
-- `memory_forget` | delete matching memory notes
-
-qmd tools:
-- `qmd_query` | search index (keyword/vector/hybrid)
-- `qmd_get` | retrieve doc by path or #docid
-- `qmd_update` | re-index all collections, optionally embed
-- `qmd_collection_add` | add dir/file as collection
-- `qmd_collection_remove` | remove collection
-- `qmd_collection_list` | list collections
-- `qmd_status` | index overview
-- `qmd_embed` | create/refresh embeddings
-
-fix semantic/hybrid backend (common on NixOS):
 ```bash
-mkdir -p ~/.cache/node-llama-cpp/xpack
-nix shell nixpkgs#gnumake nixpkgs#cmake nixpkgs#gcc nixpkgs#python3 -c qmd query "test"
-```
-if still on old qmd, update to latest:
-```bash
-npm install -g @tobilu/qmd@latest
-qmd --version
+nix build .#
+nix fmt
+nix flake check
 ```
 
-## prompts
+outputs:
 
-### jjcommit
+- `packages.<system>.default` — packaged pi assets under `share/pi-pack/`
+- `formatter.<system>` — treefmt wrapper
+- `lib.skills`, `lib.prompts`, `lib.extensions` — discovered asset names
 
-atomic commit workflow for jj (jujutsu). splits unrelated changes, lowercase imperative messages, moves main bookmark.
+## security
 
-```
-/jjcommit
-```
+extensions execute code in the agent process. review them before installing from git.
+
+skills can instruct an agent to run commands. review them before enabling in unattended services.
 
 ## license
 

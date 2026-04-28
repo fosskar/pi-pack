@@ -49,8 +49,8 @@ Once the plan is approved, implement each work unit. For each unit:
 
 When all units are complete, render a summary table:
 
-| # | Unit | Status |
-|---|------|--------|
-| 1 | <title> | done/failed |
+| #   | Unit    | Status      |
+| --- | ------- | ----------- |
+| 1   | <title> | done/failed |
 
 And a one-line summary (e.g., "22/24 units completed").
