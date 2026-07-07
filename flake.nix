@@ -87,5 +87,8 @@
       };
 
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
+
+      # nixbot scheduled effects
+      effects = import ./nix/effects.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
     };
 }
