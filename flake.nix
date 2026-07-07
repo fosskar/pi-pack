@@ -9,6 +9,7 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       treefmt-nix,
       ...
@@ -80,6 +81,11 @@
     {
       packages = eachSystem (pkgs: {
         default = package pkgs;
+      });
+
+      checks = eachSystem (pkgs: {
+        package = package pkgs;
+        formatting = treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.check self;
       });
 
       lib = {
