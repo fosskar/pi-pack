@@ -5,14 +5,14 @@ shareable pi assets: skills, prompt templates, and extensions.
 ## install with pi
 
 ```bash
-pi install git:git@codeberg.org:fosskar/pi-pack.git
+pi install git:git@github.com:fosskar/pi-pack.git
 ```
 
 or in `~/.pi/agent/settings.json`:
 
 ```json
 {
-  "packages": ["git:git@codeberg.org:fosskar/pi-pack.git"]
+  "packages": ["git:git@github.com:fosskar/pi-pack.git"]
 }
 ```
 
@@ -26,7 +26,7 @@ pi loads:
 
 ```nix
 {
-  inputs.pi-pack.url = "git+ssh://git@codeberg.org/fosskar/pi-pack.git";
+  inputs.pi-pack.url = "github:fosskar/pi-pack";
 }
 ```
 
