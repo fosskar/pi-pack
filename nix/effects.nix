@@ -29,8 +29,8 @@ _args: {
           export NIX_CONFIG="experimental-features = nix-command flakes
           access-tokens = github.com=$token"
 
-          git config --global user.name nixbot
-          git config --global user.email nixbot@nx3.eu
+          git config --global user.name 'fosskar[bot]'
+          git config --global user.email '300917551+fosskar[bot]@users.noreply.github.com'
           git config --global safe.directory '*'
 
           git clone --depth 1 --progress \
