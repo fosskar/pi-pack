@@ -4,8 +4,8 @@
 _args: {
   onSchedule.update-flake-inputs = {
     when = {
-      hour = 6;
-      minute = 0;
+      hour = 1;
+      minute = 30;
     };
     outputs.effects.update-flake-inputs =
       pkgs.runCommand "effect-update-flake-inputs"
