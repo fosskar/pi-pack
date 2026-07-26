@@ -1,5 +1,28 @@
 {
   "nodes": {
+    "nixbot": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "treefmt-nix": [
+          "treefmt-nix"
+        ]
+      },
+      "locked": {
+        "lastModified": 1785066241,
+        "narHash": "sha256-IPWJe+bobQIRny0hoK1UwMx9kIG/pYM4CSOhiAGTIAI=",
+        "owner": "Mic92",
+        "repo": "nixbot",
+        "rev": "1c4e0008a8095958c91d5c83e7c2d2a04d13bcbc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "nixbot",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1784796856,
@@ -18,6 +41,7 @@
     },
     "root": {
       "inputs": {
+        "nixbot": "nixbot",
         "nixpkgs": "nixpkgs",
         "treefmt-nix": "treefmt-nix"
       }

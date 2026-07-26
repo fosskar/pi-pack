@@ -5,6 +5,9 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+    nixbot.url = "github:Mic92/nixbot";
+    nixbot.inputs.nixpkgs.follows = "nixpkgs";
+    nixbot.inputs.treefmt-nix.follows = "treefmt-nix";
   };
 
   outputs =
@@ -12,6 +15,7 @@
       self,
       nixpkgs,
       treefmt-nix,
+      nixbot,
       ...
     }:
     let
@@ -95,6 +99,9 @@
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
 
       # nixbot scheduled effects
-      effects = import ./nix/effects.nix { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
+      herculesCI = import ./nix/effects.nix {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        inherit nixbot;
+      };
     };
 }
