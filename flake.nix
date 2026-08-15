@@ -91,6 +91,11 @@
                 assertions = [
                   {
                     assertion =
+                      builtins.elem "llm-wiki" selectedExtensions == builtins.elem pkgs.git config.home.packages;
+                    message = "Git installation must follow llm-wiki selection";
+                  }
+                  {
+                    assertion =
                       builtins.elem "sediment-memory" selectedExtensions
                       == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.sediment config.home.packages;
                     message = "Sediment installation must follow sediment-memory selection";
@@ -137,13 +142,23 @@
         home-manager-no-memory =
           (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory") extensions))
           .activationPackage;
-        extension-tests = pkgs.runCommand "pi-pack-extension-tests" { nativeBuildInputs = [ pkgs.bun ]; } ''
-          cp -r ${self} source
-          chmod -R u+w source
-          cd source
-          HOME=$TMPDIR bun --preload ./nix/test/preload.ts ./nix/test/run.ts
-          touch $out
-        '';
+        home-manager-no-wiki =
+          (homeConfiguration pkgs (builtins.filter (name: name != "llm-wiki") extensions)).activationPackage;
+        extension-tests =
+          pkgs.runCommand "pi-pack-extension-tests"
+            {
+              nativeBuildInputs = [
+                pkgs.bun
+                pkgs.git
+              ];
+            }
+            ''
+              cp -r ${self} source
+              chmod -R u+w source
+              cd source
+              HOME=$TMPDIR bun --preload ./nix/test/preload.ts ./nix/test/run.ts
+              touch $out
+            '';
         pi-compatibility =
           pkgs.runCommand "pi-pack-pi-compatibility"
             { nativeBuildInputs = [ llm-agents.packages.${pkgs.stdenv.hostPlatform.system}.pi ]; }

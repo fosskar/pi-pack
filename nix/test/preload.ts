@@ -14,6 +14,7 @@ class Component {
 mock.module("typebox", () => ({ Type: schema }));
 mock.module("@earendil-works/pi-ai", () => ({
   complete: async () => ({ content: [], stopReason: "stop" }),
+  StringEnum: () => ({}),
 }));
 mock.module("@earendil-works/pi-coding-agent", () => ({
   BorderedLoader: Component,
