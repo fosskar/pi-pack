@@ -5,7 +5,12 @@
   prompts,
   themes,
 }:
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.programs.pi-pack;
 
@@ -29,6 +34,7 @@ in
 
     package = lib.mkOption {
       type = lib.types.attrsOf lib.types.package;
+      default = self.packages.${pkgs.stdenv.hostPlatform.system};
       description = "pi-pack package set for the current system";
     };
 

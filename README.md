@@ -36,14 +36,9 @@ pi loads:
 for pi via home-manager:
 
 ```nix
-{ pkgs, ... }:
 {
   imports = [ inputs.pi-pack.homeModules.default ];
-
-  programs.pi-pack = {
-    enable = true;
-    package = inputs.pi-pack.packages.${pkgs.stdenv.hostPlatform.system};
-  };
+  programs.pi-pack.enable = true;
 }
 ```
 
