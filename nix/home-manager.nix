@@ -49,6 +49,18 @@ in
       default = skills;
       description = "Skills to deploy";
     };
+
+    prompts = lib.mkOption {
+      type = lib.types.listOf (lib.types.enum prompts);
+      default = prompts;
+      description = "Prompts to deploy";
+    };
+
+    themes = lib.mkOption {
+      type = lib.types.listOf (lib.types.enum themes);
+      default = themes;
+      description = "Themes to deploy";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -60,7 +72,7 @@ in
     home.file =
       resourceEntries ".pi/agent/extensions" (self + "/extensions") cfg.extensions
       // resourceEntries ".pi/agent/skills" (self + "/skills") cfg.skills
-      // resourceEntries ".pi/agent/prompts" (self + "/prompts") prompts
-      // resourceEntries ".pi/agent/themes" (self + "/themes") themes;
+      // resourceEntries ".pi/agent/prompts" (self + "/prompts") cfg.prompts
+      // resourceEntries ".pi/agent/themes" (self + "/themes") cfg.themes;
   };
 }

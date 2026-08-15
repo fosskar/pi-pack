@@ -25,10 +25,6 @@ Import and enable the Home Manager module:
 }
 ```
 
-The module does not install Pi. Nixfiles must install Pi separately.
-
-The `extensions` and `skills` options select resources. Both options default to all available resources. The module installs Sediment only when it deploys `sediment-memory`.
-
 ### Pi package manager
 
 Install all resources directly through Pi:
@@ -47,11 +43,11 @@ nix profile install github:fosskar/pi-pack#sediment
 
 ### Use one skill from Nix
 
-A service can reference one skill without deploying the complete package:
+Home Manager can deploy one skill for another agent:
 
 ```nix
 {
-  services.opencrow.skills.osm = "${inputs.pi-pack}/skills/osm";
+  home.file.".claude/skills/osm".source = "${inputs.pi-pack}/skills/osm";
 }
 ```
 
@@ -62,35 +58,37 @@ A service can reference one skill without deploying the complete package:
 <details>
 <summary><strong>agents-md</strong> - create or update a repository <code>AGENTS.md</code></summary>
 
+<br>
+
 - **Source:** [`skills/agents-md/`](skills/agents-md/)
 - **Use:** Bootstrap an `AGENTS.md` or check one for stale claims.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>architecture-review</strong> - find codebase architecture problems</summary>
+
+<br>
 
 - **Source:** [`skills/architecture-review/`](skills/architecture-review/)
 - **Use:** Create a visual HTML report and explore a selected problem.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>create-skills</strong> - write agent documents and skills</summary>
+
+<br>
 
 - **Source:** [`skills/create-skills/`](skills/create-skills/)
 - **Use:** Apply the included rules and references when you write agent documents.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>grilling</strong> - stress-test a plan or decision</summary>
+
+<br>
 
 - **Source:** [`skills/grilling/`](skills/grilling/)
 - **Use:** Question the user until the plan or decision is clear.
@@ -98,87 +96,85 @@ A service can reference one skill without deploying the complete package:
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>handoff</strong> - create a handoff for another agent</summary>
+
+<br>
 
 - **Source:** [`skills/handoff/`](skills/handoff/)
 - **Use:** Compact the current conversation into a handoff document.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>huh</strong> - explain the last answer again</summary>
+
+<br>
 
 - **Source:** [`skills/huh/`](skills/huh/)
 - **Use:** Give a clearer and simpler explanation of the last answer.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>nixbot-check</strong> - triage nixbot CI</summary>
+
+<br>
 
 - **Source:** [`skills/nixbot-check/`](skills/nixbot-check/)
 - **Use:** Find, classify, reproduce, and monitor nixbot failures with `nbo`.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>ops-review</strong> - find infrastructure operation risks</summary>
+
+<br>
 
 - **Source:** [`skills/ops-review/`](skills/ops-review/)
 - **Use:** Create a visual HTML report and examine a selected risk.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>osm</strong> - query OpenStreetMap</summary>
+
+<br>
 
 - **Source:** [`skills/osm/`](skills/osm/)
 - **Use:** Find places, nearby points of interest, and public transport stops.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>paperless</strong> - search and browse paperless-ngx</summary>
+
+<br>
 
 - **Source:** [`skills/paperless/`](skills/paperless/)
 - **Use:** Find documents, receipts, invoices, and scans.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>review-pong</strong> - challenge code review findings</summary>
+
+<br>
 
 - **Source:** [`skills/review-pong/`](skills/review-pong/)
 - **Use:** Ask a second model to challenge findings until the verdicts are stable.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>teach</strong> - teach a skill or concept</summary>
+
+<br>
 
 - **Source:** [`skills/teach/`](skills/teach/)
 - **Use:** Teach the user in the current workspace.
 
 </details>
-
-<br>
 
 ### Prompts
 
@@ -193,27 +189,29 @@ A service can reference one skill without deploying the complete package:
 <details>
 <summary><strong>grey-amber.json</strong> - dark grey theme with amber accents</summary>
 
+<br>
+
 - **Source:** [`themes/grey-amber.json`](themes/grey-amber.json)
 - **Name:** `grey-amber`
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>grey-teal.json</strong> - dark grey theme with teal accents</summary>
+
+<br>
 
 - **Source:** [`themes/grey-teal.json`](themes/grey-teal.json)
 - **Name:** `grey-teal`
 
 </details>
 
-<br>
-
 ### Extensions
 
 <details>
 <summary><strong>btw</strong> - run a side conversation</summary>
+
+<br>
 
 - **Source:** [`extensions/btw/index.ts`](extensions/btw/index.ts)
 - **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
@@ -221,10 +219,10 @@ A service can reference one skill without deploying the complete package:
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>clipboard</strong> - copy text to the system clipboard</summary>
+
+<br>
 
 - **Source:** [`extensions/clipboard/index.ts`](extensions/clipboard/index.ts)
 - **Tool:** `copy_to_clipboard`
@@ -232,10 +230,10 @@ A service can reference one skill without deploying the complete package:
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>sediment-memory</strong> - extract and recall long-term memories</summary>
+
+<br>
 
 - **Source:** [`extensions/sediment-memory/index.ts`](extensions/sediment-memory/index.ts)
 - **Command:** `/memory`
@@ -245,10 +243,10 @@ A service can reference one skill without deploying the complete package:
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>oracle</strong> - ask another model for a second opinion</summary>
+
+<br>
 
 - **Source:** [`extensions/oracle/index.ts`](extensions/oracle/index.ts)
 - **Command:** `/oracle`
@@ -256,28 +254,26 @@ A service can reference one skill without deploying the complete package:
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>pi-to-PI</strong> - rewrite <code>pi</code> for Anthropic models</summary>
+
+<br>
 
 - **Source:** [`extensions/pi-to-PI/index.ts`](extensions/pi-to-PI/index.ts)
 - **Use:** Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.
 
 </details>
 
-<br>
-
 <details>
 <summary><strong>sketch/</strong> - draw image input in a browser</summary>
+
+<br>
 
 - **Source:** [`extensions/sketch/`](extensions/sketch/)
 - **Command:** `/sketch`
 - **Use:** Open a browser sketch pad and send the result as image input.
 
 </details>
-
-<br>
 
 ## Nix outputs
 
