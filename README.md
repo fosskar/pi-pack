@@ -21,6 +21,9 @@ pi loads:
 - `skills/`
 - `prompts/`
 - `extensions/`
+- `themes/`
+
+`memory.ts` requires the patched Sediment package in `PATH`. Nix users can install it with `nix profile install github:fosskar/pi-pack#sediment`.
 
 ## use as nix flake source
 
@@ -34,10 +37,15 @@ for pi via home-manager:
 
 ```nix
 {
+  home.packages = [
+    inputs.pi-pack.packages.${pkgs.stdenv.hostPlatform.system}.sediment
+  ];
+
   home.file = {
     ".pi/agent/skills".source = "${inputs.pi-pack}/skills";
     ".pi/agent/prompts".source = "${inputs.pi-pack}/prompts";
     ".pi/agent/extensions".source = "${inputs.pi-pack}/extensions";
+    ".pi/agent/themes".source = "${inputs.pi-pack}/themes";
   };
 }
 ```
@@ -54,15 +62,102 @@ for services that need one skill path:
 
 ### skills
 
-| name        | purpose                                                     |
-| ----------- | ----------------------------------------------------------- |
-| `batch`     | decompose and coordinate large codebase changes             |
-| `caveman`   | answer tersely without dropping technical content           |
-| `grill-me`  | interrogate a plan one question at a time                   |
-| `jujutsu`   | reference workflow for jj                                   |
-| `osm`       | query OpenStreetMap / Nominatim / Overpass                  |
-| `paperless` | read-only paperless-ngx search and browsing                 |
-| `simplify`  | review code for reuse, quality, and efficiency, then fix it |
+<details>
+<summary><strong>agents-md</strong> - create or update a repository <code>AGENTS.md</code></summary>
+
+- **Source:** [`skills/agents-md/`](skills/agents-md/)
+- **Use:** Bootstrap an `AGENTS.md` or check one for stale claims.
+
+</details>
+
+<details>
+<summary><strong>architecture-review</strong> - find codebase architecture problems</summary>
+
+- **Source:** [`skills/architecture-review/`](skills/architecture-review/)
+- **Use:** Create a visual HTML report and explore a selected problem.
+
+</details>
+
+<details>
+<summary><strong>create-skills</strong> - write agent documents and skills</summary>
+
+- **Source:** [`skills/create-skills/`](skills/create-skills/)
+- **Use:** Apply the included rules and references when you write agent documents.
+
+</details>
+
+<details>
+<summary><strong>grilling</strong> - stress-test a plan or decision</summary>
+
+- **Source:** [`skills/grilling/`](skills/grilling/)
+- **Use:** Question the user until the plan or decision is clear.
+- **Credit:** Original skill by [Matt Pocock](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md).
+
+</details>
+
+<details>
+<summary><strong>handoff</strong> - create a handoff for another agent</summary>
+
+- **Source:** [`skills/handoff/`](skills/handoff/)
+- **Use:** Compact the current conversation into a handoff document.
+
+</details>
+
+<details>
+<summary><strong>huh</strong> - explain the last answer again</summary>
+
+- **Source:** [`skills/huh/`](skills/huh/)
+- **Use:** Give a clearer and simpler explanation of the last answer.
+
+</details>
+
+<details>
+<summary><strong>nixbot-check</strong> - triage nixbot CI</summary>
+
+- **Source:** [`skills/nixbot-check/`](skills/nixbot-check/)
+- **Use:** Find, classify, reproduce, and monitor nixbot failures with `nbo`.
+
+</details>
+
+<details>
+<summary><strong>ops-review</strong> - find infrastructure operation risks</summary>
+
+- **Source:** [`skills/ops-review/`](skills/ops-review/)
+- **Use:** Create a visual HTML report and examine a selected risk.
+
+</details>
+
+<details>
+<summary><strong>osm</strong> - query OpenStreetMap</summary>
+
+- **Source:** [`skills/osm/`](skills/osm/)
+- **Use:** Find places, nearby points of interest, and public transport stops.
+
+</details>
+
+<details>
+<summary><strong>paperless</strong> - search and browse paperless-ngx</summary>
+
+- **Source:** [`skills/paperless/`](skills/paperless/)
+- **Use:** Find documents, receipts, invoices, and scans.
+
+</details>
+
+<details>
+<summary><strong>review-pong</strong> - challenge code review findings</summary>
+
+- **Source:** [`skills/review-pong/`](skills/review-pong/)
+- **Use:** Ask a second model to challenge findings until the verdicts are stable.
+
+</details>
+
+<details>
+<summary><strong>teach</strong> - teach a skill or concept</summary>
+
+- **Source:** [`skills/teach/`](skills/teach/)
+- **Use:** Teach the user in the current workspace.
+
+</details>
 
 ### prompts
 
@@ -72,18 +167,80 @@ for services that need one skill path:
 | `jjcommit.md` | atomic jj commit workflow     |
 | `publish.md`  | publish committed work safely |
 
+### themes
+
+<details>
+<summary><strong>grey-amber.json</strong> - dark grey theme with amber accents</summary>
+
+- **Source:** [`themes/grey-amber.json`](themes/grey-amber.json)
+- **Name:** `grey-amber`
+
+</details>
+
+<details>
+<summary><strong>grey-teal.json</strong> - dark grey theme with teal accents</summary>
+
+- **Source:** [`themes/grey-teal.json`](themes/grey-teal.json)
+- **Name:** `grey-teal`
+
+</details>
+
 ### extensions
 
-| name            | purpose                                       |
-| --------------- | --------------------------------------------- |
-| `btw.ts`        | ask current model a side question             |
-| `clipboard.ts`  | copy text via OSC52                           |
-| `diff.ts`       | open changed files in editor diff view        |
-| `oracle.ts`     | ask another configured model for review       |
-| `pi-pong.ts`    | run two models on a task until convergence    |
-| `pi-to-PI.ts`   | rewrite standalone `pi` to `PI` for Anthropic |
-| `safety-net.ts` | block or confirm dangerous tool calls         |
-| `sketch/`       | browser sketch pad for image input            |
+<details>
+<summary><strong>btw.ts</strong> - run a side conversation</summary>
+
+- **Source:** [`extensions/btw.ts`](extensions/btw.ts)
+- **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
+- **Use:** Ask side questions without adding each turn to the main conversation.
+
+</details>
+
+<details>
+<summary><strong>clipboard.ts</strong> - copy text to the system clipboard</summary>
+
+- **Source:** [`extensions/clipboard.ts`](extensions/clipboard.ts)
+- **Tool:** `copy_to_clipboard`
+- **Use:** Copy generated text through OSC52.
+
+</details>
+
+<details>
+<summary><strong>memory.ts</strong> - extract and recall long-term memories</summary>
+
+- **Source:** [`extensions/memory.ts`](extensions/memory.ts)
+- **Command:** `/memory`
+- **Tool:** `memory_search`
+- **Requirement:** `sediment` in `PATH`
+- **Nix package:** `packages.<system>.sediment`
+
+</details>
+
+<details>
+<summary><strong>oracle.ts</strong> - ask another model for a second opinion</summary>
+
+- **Source:** [`extensions/oracle.ts`](extensions/oracle.ts)
+- **Command:** `/oracle`
+- **Tool:** `second_opinion`
+
+</details>
+
+<details>
+<summary><strong>pi-to-PI.ts</strong> - rewrite <code>pi</code> for Anthropic models</summary>
+
+- **Source:** [`extensions/pi-to-PI.ts`](extensions/pi-to-PI.ts)
+- **Use:** Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.
+
+</details>
+
+<details>
+<summary><strong>sketch/</strong> - draw image input in a browser</summary>
+
+- **Source:** [`extensions/sketch/`](extensions/sketch/)
+- **Command:** `/sketch`
+- **Use:** Open a browser sketch pad and send the result as image input.
+
+</details>
 
 ## nix outputs
 
@@ -96,8 +253,11 @@ nix flake check
 outputs:
 
 - `packages.<system>.default` — packaged pi assets under `share/pi-pack/`
+- `packages.<system>.sediment` — patched Sediment package for `memory.ts`
+- `checks.<system>.extension-tests` — mocked extension load and unit tests
+- `checks.<system>.pi-compatibility` — real extension load with Pi from `llm-agents.nix`
 - `formatter.<system>` — treefmt wrapper
-- `lib.skills`, `lib.prompts`, `lib.extensions` — discovered asset names
+- `lib.skills`, `lib.prompts`, `lib.extensions`, `lib.themes` — discovered asset names
 
 ## security
 

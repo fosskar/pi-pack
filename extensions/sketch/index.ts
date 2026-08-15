@@ -4,14 +4,11 @@
  * image is injected into the next user message automatically
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createServer, type Server } from "node:http";
 import { exec } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { join } from "node:path";
 const SKETCH_HTML = readFileSync(join(__dirname, "sketch.html"), "utf-8");
 
 function openBrowser(url: string): void {
@@ -127,8 +124,8 @@ export default function (pi: ExtensionAPI) {
   // pending sketch base64 to attach to the next user message
   let pendingSketch: string | null = null;
 
-  // clear pending sketch on session switch
-  pi.on("session_switch", async () => {
+  // clear pending sketch on session shutdown/switch/reload
+  pi.on("session_shutdown", async () => {
     pendingSketch = null;
   });
 
@@ -143,7 +140,8 @@ export default function (pi: ExtensionAPI) {
     pi.sendUserMessage([
       {
         type: "image",
-        source: { type: "base64", mediaType: "image/png", data: imageData },
+        mimeType: "image/png",
+        data: imageData,
       },
       { type: "text", text: event.text || "Here's my sketch:" },
     ]);
@@ -166,20 +164,27 @@ export default function (pi: ExtensionAPI) {
 
       const imageBase64 = await ctx.ui.custom<string | null>(
         (_tui, theme, _kb, done) => {
-          server.waitForResult().then(done);
+          let finished = false;
+          const finish = (result: string | null) => {
+            if (finished) return;
+            finished = true;
+            done(result);
+          };
+          server.waitForResult().then(finish);
           return {
             render(_width: number): string[] {
               return [
                 theme.fg("success", "sketch opened in browser"),
                 theme.fg("muted", server.url),
                 "",
-                theme.fg("dim", "press Escape to cancel"),
+                theme.fg("dim", "press Escape or Ctrl+C to cancel"),
               ];
             },
+            invalidate() {},
             handleInput(data: string) {
-              if (data === "\x1b" || data === "\x1b\x1b") {
+              if (data === "\x03" || data === "\x1b" || data === "\x1b\x1b") {
                 server.close();
-                done(null);
+                finish(null);
               }
             },
           };
@@ -190,7 +195,7 @@ export default function (pi: ExtensionAPI) {
         pendingSketch = imageBase64;
         ctx.ui.notify(
           "sketch ready — type your prompt and it'll be attached",
-          "success",
+          "info",
         );
         ctx.ui.setEditorText("describe what's in this sketch:");
       } else {
