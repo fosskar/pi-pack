@@ -54,9 +54,8 @@ async function fixture(root: string) {
   await git(["clone", remote, seed], root);
   await git(["switch", "-c", "main"], seed);
   await mkdir(join(seed, "wiki"), { recursive: true });
-  await writeFile(join(seed, "AGENTS.md"), "# wiki schema\n");
   await writeFile(join(seed, "wiki", "index.md"), "# Wiki\n");
-  await git(["add", "AGENTS.md", "wiki/index.md"], seed);
+  await git(["add", "wiki/index.md"], seed);
   await git(["commit", "-m", "seed wiki"], seed);
   await git(["push", "-u", "origin", "main"], seed);
   await git(["symbolic-ref", "HEAD", "refs/heads/main"], remote);
@@ -122,15 +121,18 @@ export default async function (): Promise<void> {
       [
         {
           path: "raw/sources/editor-preference.md",
+          role: "source",
           content: "I prefer modal editors.\n",
         },
         {
           path: "wiki/sources/editor-preference.md",
+          role: "concept",
           content:
             "---\ntype: Source\ntitle: Editor preference\n---\n\n# Editor preference\n\nThe user prefers modal editors.\n",
         },
         {
           path: "wiki/index.md",
+          role: "index",
           expected_sha256: initial.files[0].sha256,
           content:
             "# Wiki\n\n- [Editor preference](sources/editor-preference.md)\n",
@@ -166,6 +168,7 @@ export default async function (): Promise<void> {
       repository.apply("query-note", "wiki: reject malformed note", [
         {
           path: "wiki/notes/malformed.md",
+          role: "concept",
           content: "---\ntype: Note\n\nMissing closing delimiter.\n",
         },
       ]),
@@ -176,6 +179,7 @@ export default async function (): Promise<void> {
       repository.apply("query-note", "wiki: add stale note", [
         {
           path: "wiki/index.md",
+          role: "index",
           expected_sha256: "0".repeat(64),
           content: "# Changed\n",
         },
@@ -187,11 +191,12 @@ export default async function (): Promise<void> {
       repository.apply("ingest", "wiki: reject raw update", [
         {
           path: "raw/sources/editor-preference.md",
+          role: "source",
           expected_sha256: "0".repeat(64),
           content: "changed\n",
         },
       ]),
-      "Raw source is immutable",
+      "Source material is immutable",
     );
 
     const outside = join(root, "outside.md");
@@ -204,6 +209,7 @@ export default async function (): Promise<void> {
       repository.apply("query-note", "wiki: reject symbolic link", [
         {
           path: "wiki/link.md",
+          role: "concept",
           expected_sha256: "0".repeat(64),
           content: "changed\n",
         },

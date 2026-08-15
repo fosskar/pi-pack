@@ -49,8 +49,11 @@ export interface WikiConfig {
   branch: string;
 }
 
+export type WikiFileRole = "source" | "concept" | "index" | "log";
+
 export interface WikiChange {
   path: string;
+  role: WikiFileRole;
   content: string;
   expected_sha256?: string;
 }
@@ -196,9 +199,7 @@ export class GitWikiRepository {
     return this.withLock(async () => {
       await this.ensureClone(signal);
       const commit = await this.synchronize(signal);
-      const pathspecs = (paths ?? ["wiki", "raw", "AGENTS.md"]).map(
-        validateRelativePath,
-      );
+      const pathspecs = paths?.map(validateRelativePath) ?? [];
       const result = await this.runGit(
         ["grep", "-Fni", "--", query, ...pathspecs],
         { cwd: this.config.path, signal, timeout: 15_000 },
@@ -252,7 +253,7 @@ export class GitWikiRepository {
           );
         }
 
-        await this.validateWorktree(worktree, actualPaths, signal);
+        await this.validateWorktree(worktree, changes, signal);
         await this.git(
           ["-c", "core.hooksPath=/dev/null", "commit", "-m", message],
           worktree,
@@ -357,13 +358,6 @@ export class GitWikiRepository {
     const paths = changes.map((change) => validateRelativePath(change.path));
     if (new Set(paths).size !== paths.length)
       throw new Error("apply contains duplicate paths");
-    if (
-      paths.some(
-        (path) => !path.startsWith("raw/") && !path.startsWith("wiki/"),
-      )
-    ) {
-      throw new Error("apply can change only raw/ and wiki/ paths");
-    }
     const bytes = changes.reduce(
       (sum, change) => sum + Buffer.byteLength(change.content),
       0,
@@ -392,8 +386,9 @@ export class GitWikiRepository {
         throw new Error(`Expected existing file is missing: ${path}`);
       }
     } else {
-      if (path.startsWith("raw/"))
-        throw new Error(`Raw source is immutable: ${path}`);
+      if (change.role === "source") {
+        throw new Error(`Source material is immutable: ${path}`);
+      }
       if (!change.expected_sha256) {
         throw new Error(`Existing file requires expected_sha256: ${path}`);
       }
@@ -428,21 +423,39 @@ export class GitWikiRepository {
 
   private async validateWorktree(
     worktree: string,
-    changedPaths: string[],
+    changes: WikiChange[],
     signal?: AbortSignal,
   ): Promise<void> {
-    await lstat(join(worktree, "AGENTS.md"));
-    for (const path of changedPaths) {
-      if (!path.startsWith("wiki/") || !path.endsWith(".md")) continue;
-      const name = basename(path).toLowerCase();
-      if (name === "index.md" || name === "log.md") continue;
+    for (const change of changes) {
+      const path = validateRelativePath(change.path);
+      if (change.role === "source") continue;
+      if (!path.endsWith(".md")) {
+        throw new Error(
+          `${change.role} files must use the .md suffix: ${path}`,
+        );
+      }
+      if (
+        change.role === "index" &&
+        basename(path).toLowerCase() !== "index.md"
+      ) {
+        throw new Error(
+          `An index role requires the reserved index.md name: ${path}`,
+        );
+      }
+      if (change.role === "log" && basename(path).toLowerCase() !== "log.md") {
+        throw new Error(
+          `A log role requires the reserved log.md name: ${path}`,
+        );
+      }
+      if (change.role !== "concept") continue;
+
       const content = await readFile(join(worktree, path), "utf8");
       const closing = content.indexOf("\n---\n", 4);
       const frontmatter = closing < 0 ? "" : content.slice(4, closing);
       const type = frontmatter.match(/^type:\s*(.+)$/m)?.[1]?.trim();
       if (!type || type.startsWith("#")) {
         throw new Error(
-          `Wiki page requires valid frontmatter with type: ${path}`,
+          `OKF concept requires valid frontmatter with type: ${path}`,
         );
       }
     }
@@ -474,7 +487,6 @@ export class GitWikiRepository {
         60_000,
       );
     }
-    await lstat(join(this.config.path, "AGENTS.md"));
   }
 
   private async synchronize(signal?: AbortSignal): Promise<string> {
@@ -635,8 +647,10 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
     promptGuidelines: [
       "Use llm_wiki when the user asks to capture, ingest, query, or lint wiki knowledge, or to preserve a durable personal fact.",
       "Use llm_wiki for wiki repository access instead of direct Git commands or direct file mutation.",
-      "Read the repository AGENTS.md with llm_wiki before an apply action and follow it as the semantic authority.",
-      "Submit every new or changed file for one complete semantic operation in one llm_wiki apply action.",
+      "Follow the Karpathy LLM Wiki pattern: preserve source material, maintain derived knowledge separately, search before creating pages, integrate new evidence, and keep provenance.",
+      "Write OKF v0.2 concept documents as Markdown with YAML frontmatter and a non-empty type; preserve unknown types and fields, and use index.md and log.md only as reserved documents.",
+      "Discover and preserve the connected repository layout; do not require raw/, wiki/, SPEC.md, AGENTS.md, or another repository-specific path.",
+      "For llm_wiki apply, label each file as source, concept, index, or log and submit every file for one complete semantic operation.",
       "Preserve only non-sensitive personal facts stated by the user; never store secrets or inferred sensitive facts.",
     ],
     parameters: Type.Object({
@@ -661,6 +675,7 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
         Type.Array(
           Type.Object({
             path: Type.String(),
+            role: StringEnum(["source", "concept", "index", "log"] as const),
             content: Type.String(),
             expected_sha256: Type.Optional(Type.String()),
           }),
@@ -742,25 +757,25 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
     "wiki-capture",
     "Capture and ingest a source into the Git-backed LLM wiki",
     (source) =>
-      `Capture and ingest this source into the LLM wiki: ${source}\nUse llm_wiki only for repository access. Read AGENTS.md first. Submit the complete operation with one apply action.`,
+      `Capture and ingest this source into the LLM wiki: ${source}\nUse llm_wiki only for repository access. Discover and preserve the existing layout. Follow the built-in Karpathy and OKF workflow. Submit the complete operation with one apply action.`,
   );
   registerWorkflowCommand(
     "wiki-query",
     "Answer a question from the Git-backed LLM wiki",
     (question) =>
-      `Answer this question from the LLM wiki: ${question}\nUse llm_wiki to read AGENTS.md, search, and read the supporting pages. Keep the query read-only unless I explicitly request a filed note.`,
+      `Answer this question from the LLM wiki: ${question}\nUse llm_wiki to discover the layout, search, and read the supporting pages. Keep the query read-only unless I explicitly request a filed note.`,
   );
   registerWorkflowCommand(
     "wiki-observe",
     "Preserve a durable personal fact in the Git-backed LLM wiki",
     (observation) =>
-      `Preserve this user-stated observation in the LLM wiki: ${observation}\nUse llm_wiki only for repository access. Read AGENTS.md first. Do not infer or store sensitive facts. Submit the complete operation with one observation apply action.`,
+      `Preserve this user-stated observation in the LLM wiki: ${observation}\nUse llm_wiki only for repository access. Discover and preserve the existing layout. Do not infer or store sensitive facts. Submit the complete operation with one observation apply action.`,
   );
   registerWorkflowCommand(
     "wiki-lint",
     "Inspect the Git-backed LLM wiki without changing it",
     () =>
-      "Lint the LLM wiki. Use llm_wiki to read AGENTS.md and inspect the complete relevant indexes. Report findings only. Do not apply fixes.",
+      "Lint the LLM wiki. Use llm_wiki to discover the layout and inspect its OKF concepts, links, indexes, logs, and provenance. Report findings only. Do not apply fixes.",
     false,
   );
   registerWorkflowCommand(

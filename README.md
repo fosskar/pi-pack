@@ -216,6 +216,8 @@ Home Manager can deploy one skill for another agent:
 - **Requirement:** `git` in `PATH`
 - **Use:** Safely operate an existing Git-backed wiki without GitHub APIs.
 
+The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document baseline. It discovers and preserves the connected repository layout. It does not require `raw/`, `wiki/`, `SPEC.md`, or `AGENTS.md`. Each `apply` file declares its `source`, `concept`, `index`, or `log` role.
+
 </details>
 
 <details>
