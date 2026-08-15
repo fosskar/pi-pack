@@ -57,123 +57,100 @@ Home Manager can deploy one skill for another agent:
 
 <details>
 <summary><strong>agents-md</strong> - create or update a repository <code>AGENTS.md</code></summary>
-
 <br>
-
-- **Source:** [`skills/agents-md/`](skills/agents-md/)
-- **Use:** Bootstrap an `AGENTS.md` or check one for stale claims.
-
+• **Source:** [`skills/agents-md/`](skills/agents-md/)
+<br>
+• **Use:** Bootstrap an `AGENTS.md` or check one for stale claims.
 </details>
 
 <details>
 <summary><strong>architecture-review</strong> - find codebase architecture problems</summary>
-
 <br>
-
-- **Source:** [`skills/architecture-review/`](skills/architecture-review/)
-- **Use:** Create a visual HTML report and explore a selected problem.
-
+• **Source:** [`skills/architecture-review/`](skills/architecture-review/)
+<br>
+• **Use:** Create a visual HTML report and explore a selected problem.
 </details>
 
 <details>
 <summary><strong>create-skills</strong> - write agent documents and skills</summary>
-
 <br>
-
-- **Source:** [`skills/create-skills/`](skills/create-skills/)
-- **Use:** Apply the included rules and references when you write agent documents.
-
+• **Source:** [`skills/create-skills/`](skills/create-skills/)
+<br>
+• **Use:** Apply the included rules and references when you write agent documents.
 </details>
 
 <details>
 <summary><strong>grilling</strong> - stress-test a plan or decision</summary>
-
 <br>
-
-- **Source:** [`skills/grilling/`](skills/grilling/)
-- **Use:** Question the user until the plan or decision is clear.
-- **Credit:** Original skill by [Matt Pocock](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md).
-
+• **Source:** [`skills/grilling/`](skills/grilling/)
+<br>
+• **Use:** Question the user until the plan or decision is clear.
+<br>
+• **Credit:** Original skill by [Matt Pocock](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md).
 </details>
 
 <details>
 <summary><strong>handoff</strong> - create a handoff for another agent</summary>
-
 <br>
-
-- **Source:** [`skills/handoff/`](skills/handoff/)
-- **Use:** Compact the current conversation into a handoff document.
-
+• **Source:** [`skills/handoff/`](skills/handoff/)
+<br>
+• **Use:** Compact the current conversation into a handoff document.
 </details>
 
 <details>
 <summary><strong>huh</strong> - explain the last answer again</summary>
-
 <br>
-
-- **Source:** [`skills/huh/`](skills/huh/)
-- **Use:** Give a clearer and simpler explanation of the last answer.
-
+• **Source:** [`skills/huh/`](skills/huh/)
+<br>
+• **Use:** Give a clearer and simpler explanation of the last answer.
 </details>
 
 <details>
 <summary><strong>nixbot-check</strong> - triage nixbot CI</summary>
-
 <br>
-
-- **Source:** [`skills/nixbot-check/`](skills/nixbot-check/)
-- **Use:** Find, classify, reproduce, and monitor nixbot failures with `nbo`.
-
+• **Source:** [`skills/nixbot-check/`](skills/nixbot-check/)
+<br>
+• **Use:** Find, classify, reproduce, and monitor nixbot failures with `nbo`.
 </details>
 
 <details>
 <summary><strong>ops-review</strong> - find infrastructure operation risks</summary>
-
 <br>
-
-- **Source:** [`skills/ops-review/`](skills/ops-review/)
-- **Use:** Create a visual HTML report and examine a selected risk.
-
+• **Source:** [`skills/ops-review/`](skills/ops-review/)
+<br>
+• **Use:** Create a visual HTML report and examine a selected risk.
 </details>
 
 <details>
 <summary><strong>osm</strong> - query OpenStreetMap</summary>
-
 <br>
-
-- **Source:** [`skills/osm/`](skills/osm/)
-- **Use:** Find places, nearby points of interest, and public transport stops.
-
+• **Source:** [`skills/osm/`](skills/osm/)
+<br>
+• **Use:** Find places, nearby points of interest, and public transport stops.
 </details>
 
 <details>
 <summary><strong>paperless</strong> - search and browse paperless-ngx</summary>
-
 <br>
-
-- **Source:** [`skills/paperless/`](skills/paperless/)
-- **Use:** Find documents, receipts, invoices, and scans.
-
+• **Source:** [`skills/paperless/`](skills/paperless/)
+<br>
+• **Use:** Find documents, receipts, invoices, and scans.
 </details>
 
 <details>
 <summary><strong>review-pong</strong> - challenge code review findings</summary>
-
 <br>
-
-- **Source:** [`skills/review-pong/`](skills/review-pong/)
-- **Use:** Ask a second model to challenge findings until the verdicts are stable.
-
+• **Source:** [`skills/review-pong/`](skills/review-pong/)
+<br>
+• **Use:** Ask a second model to challenge findings until the verdicts are stable.
 </details>
 
 <details>
 <summary><strong>teach</strong> - teach a skill or concept</summary>
-
 <br>
-
-- **Source:** [`skills/teach/`](skills/teach/)
-- **Use:** Teach the user in the current workspace.
-
+• **Source:** [`skills/teach/`](skills/teach/)
+<br>
+• **Use:** Teach the user in the current workspace.
 </details>
 
 ### Prompts
@@ -188,91 +165,82 @@ Home Manager can deploy one skill for another agent:
 
 <details>
 <summary><strong>grey-amber.json</strong> - dark grey theme with amber accents</summary>
-
 <br>
-
-- **Source:** [`themes/grey-amber.json`](themes/grey-amber.json)
-- **Name:** `grey-amber`
-
+• **Source:** [`themes/grey-amber.json`](themes/grey-amber.json)
+<br>
+• **Name:** `grey-amber`
 </details>
 
 <details>
 <summary><strong>grey-teal.json</strong> - dark grey theme with teal accents</summary>
-
 <br>
-
-- **Source:** [`themes/grey-teal.json`](themes/grey-teal.json)
-- **Name:** `grey-teal`
-
+• **Source:** [`themes/grey-teal.json`](themes/grey-teal.json)
+<br>
+• **Name:** `grey-teal`
 </details>
 
 ### Extensions
 
 <details>
 <summary><strong>btw</strong> - run a side conversation</summary>
-
 <br>
-
-- **Source:** [`extensions/btw/index.ts`](extensions/btw/index.ts)
-- **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
-- **Use:** Ask side questions without adding each turn to the main conversation.
-
+• **Source:** [`extensions/btw/index.ts`](extensions/btw/index.ts)
+<br>
+• **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
+<br>
+• **Use:** Ask side questions without adding each turn to the main conversation.
 </details>
 
 <details>
 <summary><strong>clipboard</strong> - copy text to the system clipboard</summary>
-
 <br>
-
-- **Source:** [`extensions/clipboard/index.ts`](extensions/clipboard/index.ts)
-- **Tool:** `copy_to_clipboard`
-- **Use:** Copy generated text through OSC52.
-
+• **Source:** [`extensions/clipboard/index.ts`](extensions/clipboard/index.ts)
+<br>
+• **Tool:** `copy_to_clipboard`
+<br>
+• **Use:** Copy generated text through OSC52.
 </details>
 
 <details>
 <summary><strong>sediment-memory</strong> - extract and recall long-term memories</summary>
-
 <br>
-
-- **Source:** [`extensions/sediment-memory/index.ts`](extensions/sediment-memory/index.ts)
-- **Command:** `/memory`
-- **Tool:** `memory_search`
-- **Requirement:** `sediment` in `PATH`
-- **Nix package:** `packages.<system>.sediment`
-
+• **Source:** [`extensions/sediment-memory/index.ts`](extensions/sediment-memory/index.ts)
+<br>
+• **Command:** `/memory`
+<br>
+• **Tool:** `memory_search`
+<br>
+• **Requirement:** `sediment` in `PATH`
+<br>
+• **Nix package:** `packages.<system>.sediment`
 </details>
 
 <details>
 <summary><strong>oracle</strong> - ask another model for a second opinion</summary>
-
 <br>
-
-- **Source:** [`extensions/oracle/index.ts`](extensions/oracle/index.ts)
-- **Command:** `/oracle`
-- **Tool:** `second_opinion`
-
+• **Source:** [`extensions/oracle/index.ts`](extensions/oracle/index.ts)
+<br>
+• **Command:** `/oracle`
+<br>
+• **Tool:** `second_opinion`
 </details>
 
 <details>
 <summary><strong>pi-to-PI</strong> - rewrite <code>pi</code> for Anthropic models</summary>
-
 <br>
-
-- **Source:** [`extensions/pi-to-PI/index.ts`](extensions/pi-to-PI/index.ts)
-- **Use:** Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.
-
+• **Source:** [`extensions/pi-to-PI/index.ts`](extensions/pi-to-PI/index.ts)
+<br>
+• **Use:** Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.
 </details>
 
 <details>
 <summary><strong>sketch/</strong> - draw image input in a browser</summary>
-
 <br>
-
-- **Source:** [`extensions/sketch/`](extensions/sketch/)
-- **Command:** `/sketch`
-- **Use:** Open a browser sketch pad and send the result as image input.
-
+• **Source:** [`extensions/sketch/`](extensions/sketch/)
+<br>
+• **Command:** `/sketch`
+<br>
+• **Use:** Open a browser sketch pad and send the result as image input.
 </details>
 
 ## Nix outputs
