@@ -68,7 +68,7 @@
           };
         };
 
-      sedimentPackage = pkgs: pkgs.callPackage ./packages/sediment/package.nix { };
+      sedimentPackage = pkgs: pkgs.callPackage ./nix/packages/sediment/package.nix { };
 
       homeConfiguration =
         pkgs: selectedExtensions:
@@ -91,9 +91,9 @@
                 assertions = [
                   {
                     assertion =
-                      builtins.elem "sediment-memory.ts" selectedExtensions
+                      builtins.elem "sediment-memory" selectedExtensions
                       == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.sediment config.home.packages;
-                    message = "Sediment installation must follow sediment-memory.ts selection";
+                    message = "Sediment installation must follow sediment-memory selection";
                   }
                 ];
               }
@@ -135,13 +135,13 @@
         sediment = sedimentPackage pkgs;
         home-manager = (homeConfiguration pkgs extensions).activationPackage;
         home-manager-no-memory =
-          (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory.ts") extensions))
+          (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory") extensions))
           .activationPackage;
         extension-tests = pkgs.runCommand "pi-pack-extension-tests" { nativeBuildInputs = [ pkgs.bun ]; } ''
           cp -r ${self} source
           chmod -R u+w source
           cd source
-          HOME=$TMPDIR bun --preload ./tests/preload.ts ./tests/run.ts
+          HOME=$TMPDIR bun --preload ./nix/test/preload.ts ./nix/test/run.ts
           touch $out
         '';
         pi-compatibility =
@@ -154,7 +154,7 @@
 
               mkdir -p "$TMPDIR/home" "$TMPDIR/agent"
               extensions=()
-              for extension in extensions/*.ts extensions/*/index.ts; do
+              for extension in extensions/*/index.ts; do
                 extensions+=(--extension "$PWD/$extension")
               done
 

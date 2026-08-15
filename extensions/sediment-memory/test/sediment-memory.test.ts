@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {
+import extension, {
   buildEvidenceTurn,
   parseEvidenceFactLines,
   prepareEvidenceExtraction,
@@ -7,7 +7,8 @@ import {
   renderMemorySearchResults,
   type EvidenceRecord,
   type RecallResult,
-} from "../extensions/sediment-memory.ts";
+} from "../index.ts";
+import { createMockPi } from "../../../nix/test/helpers.ts";
 
 function testStructuredCapture(): void {
   const messages = [
@@ -188,6 +189,10 @@ function testSearchRendering(): void {
 }
 
 export default function (): void {
+  const mock = createMockPi();
+  extension(mock.pi as never);
+  assert.ok(mock.tools.get("memory_search"));
+
   testStructuredCapture();
   testProvenanceGate();
   testSpoolCompatibility();

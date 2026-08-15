@@ -601,7 +601,7 @@ class SedimentStore {
 
   /**
    * Drain near-duplicates before compaction after enough LanceDB writes.
-   * `consolidate` comes from packages/sediment/consolidate-subcommand.patch.
+   * `consolidate` comes from nix/packages/sediment/consolidate-subcommand.patch.
    */
   private async maintain(): Promise<void> {
     try {

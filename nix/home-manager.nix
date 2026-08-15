@@ -24,7 +24,7 @@ let
     );
 
   resourcePackages = {
-    extensions."sediment-memory.ts" = [ cfg.package.sediment ];
+    extensions.sediment-memory = [ cfg.package.sediment ];
     skills = { };
   };
 in
