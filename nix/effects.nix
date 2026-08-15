@@ -3,17 +3,11 @@
 { pkgs, nixbot }:
 let
   inherit (nixbot.lib.effects { inherit pkgs; }) mkEffect;
-in
-_args: {
-  onSchedule.update-flake-inputs = {
-    when = {
-      hour = 1;
-      minute = 30;
-    };
-    # nixbot mounts a pushable clone of the effect's commit at
-    # $NIXBOT_EFFECT_CHECKOUT, which is also the working directory.
-    outputs.effects.update-flake-inputs = mkEffect {
-      name = "effect-update-flake-inputs";
+
+  mkRepoEffect =
+    name: command:
+    mkEffect {
+      name = "effect-${name}";
       checkout = true;
       inputs = [
         pkgs.git
@@ -34,8 +28,28 @@ _args: {
         git config remote.origin.promisor true
         git config remote.origin.partialclonefilter blob:none
 
-        nix run "github:fosskar/nixfiles#updater-flake-inputs"
+        ${command}
       '';
     };
+in
+_args: {
+  onSchedule.update-pkgs = {
+    when = {
+      hour = 1;
+      minute = 0;
+    };
+    outputs.effects.update-pkgs = mkRepoEffect "update-pkgs" ''
+      nix run "github:fosskar/nixfiles#updater-packages"
+    '';
+  };
+
+  onSchedule.update-flake-inputs = {
+    when = {
+      hour = 1;
+      minute = 30;
+    };
+    outputs.effects.update-flake-inputs = mkRepoEffect "update-flake-inputs" ''
+      nix run "github:fosskar/nixfiles#updater-flake-inputs"
+    '';
   };
 }
