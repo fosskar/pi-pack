@@ -30,6 +30,13 @@ const MAX_READ_BYTES = 50 * 1024;
 const MAX_SEARCH_BYTES = 50 * 1024;
 const MAX_APPLY_FILES = 32;
 const MAX_APPLY_BYTES = 512 * 1024;
+const GUIDANCE_FILES = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "SPEC.md",
+  "WIKI_SCHEMA.md",
+  "llm-wiki.md",
+] as const;
 
 export interface GitResult {
   stdout: string;
@@ -49,7 +56,7 @@ export interface WikiConfig {
   branch: string;
 }
 
-export type WikiFileRole = "source" | "concept" | "index" | "log";
+export type WikiFileRole = "source" | "concept" | "index" | "log" | "schema";
 
 export interface WikiChange {
   path: string;
@@ -126,16 +133,59 @@ async function assertNoSymlinkPath(root: string, path: string): Promise<void> {
   }
 }
 
-function configFromEnvironment(): WikiConfig {
-  const configuredPath = process.env.LLM_WIKI_PATH;
-  if (!configuredPath) {
+async function isWikiRepository(path: string): Promise<boolean> {
+  try {
+    const git = await lstat(join(path, ".git"));
+    return (
+      basename(path) === "llm-wiki" &&
+      (git.isDirectory() || git.isFile()) &&
+      (await lstat(join(path, "raw"))).isDirectory() &&
+      (await lstat(join(path, "wiki"))).isDirectory()
+    );
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+export async function discoverWikiPath(start: string): Promise<string> {
+  const candidates = new Set<string>();
+  let directory = resolve(start);
+  while (true) {
+    for (const candidate of [directory, join(directory, "llm-wiki")]) {
+      if (await isWikiRepository(candidate)) {
+        candidates.add(await realpath(candidate));
+      }
+    }
+    const parent = dirname(directory);
+    if (parent === directory) break;
+    directory = parent;
+  }
+
+  if (candidates.size === 0) {
     throw new Error(
-      "LLM_WIKI_PATH is not set. Set it to the local wiki clone path. " +
-        "Set LLM_WIKI_REMOTE too when the extension must create the clone.",
+      "No llm-wiki Git repository with raw/ and wiki/ was found. " +
+        "Run Pi in or near the repository, or set LLM_WIKI_PATH.",
     );
   }
+  if (candidates.size > 1) {
+    throw new Error(
+      `Several llm-wiki repositories were found; set LLM_WIKI_PATH: ${[...candidates].join(", ")}`,
+    );
+  }
+  return [...candidates][0];
+}
+
+async function configFromEnvironment(): Promise<WikiConfig> {
+  const configuredPath = process.env.LLM_WIKI_PATH;
+  const path = configuredPath
+    ? resolve(configuredPath.replace(/^~(?=$|\/)/, homedir()))
+    : await discoverWikiPath(process.cwd());
+  if (basename(path) !== "llm-wiki") {
+    throw new Error(`Wiki repository must be named llm-wiki: ${path}`);
+  }
   return {
-    path: resolve(configuredPath.replace(/^~(?=$|\/)/, homedir())),
+    path,
     remote: process.env.LLM_WIKI_REMOTE,
     branch: process.env.LLM_WIKI_BRANCH || "main",
   };
@@ -156,11 +206,22 @@ export class GitWikiRepository {
         this.config.path,
         signal,
       );
+      const guidanceFiles: string[] = [];
+      for (const path of GUIDANCE_FILES) {
+        try {
+          if ((await lstat(join(this.config.path, path))).isFile()) {
+            guidanceFiles.push(path);
+          }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        }
+      }
       return {
         path: this.config.path,
         branch: this.config.branch,
         upstream,
         commit,
+        guidanceFiles,
       };
     });
   }
@@ -358,6 +419,31 @@ export class GitWikiRepository {
     const paths = changes.map((change) => validateRelativePath(change.path));
     if (new Set(paths).size !== paths.length)
       throw new Error("apply contains duplicate paths");
+    for (const [index, change] of changes.entries()) {
+      const path = paths[index];
+      if (change.role === "source" && !path.startsWith("raw/")) {
+        throw new Error(`A source role requires a raw/ path: ${path}`);
+      }
+      if (
+        ["concept", "index", "log"].includes(change.role) &&
+        !path.startsWith("wiki/")
+      ) {
+        throw new Error(`${change.role} role requires a wiki/ path: ${path}`);
+      }
+      if (
+        change.role === "schema" &&
+        !GUIDANCE_FILES.includes(path as (typeof GUIDANCE_FILES)[number])
+      ) {
+        throw new Error(
+          `A schema role requires a known root schema path: ${path}`,
+        );
+      }
+      if (
+        !["source", "concept", "index", "log", "schema"].includes(change.role)
+      ) {
+        throw new Error(`Unknown wiki file role: ${change.role}`);
+      }
+    }
     const bytes = changes.reduce(
       (sum, change) => sum + Buffer.byteLength(change.content),
       0,
@@ -463,6 +549,11 @@ export class GitWikiRepository {
   }
 
   private async ensureClone(signal?: AbortSignal): Promise<void> {
+    if (basename(this.config.path) !== "llm-wiki") {
+      throw new Error(
+        `Wiki repository must be named llm-wiki: ${this.config.path}`,
+      );
+    }
     try {
       await lstat(join(this.config.path, ".git"));
     } catch (error) {
@@ -486,6 +577,11 @@ export class GitWikiRepository {
         signal,
         60_000,
       );
+    }
+    for (const directory of ["raw", "wiki"]) {
+      if (!(await lstat(join(this.config.path, directory))).isDirectory()) {
+        throw new Error(`Wiki repository requires a ${directory}/ directory`);
+      }
     }
   }
 
@@ -649,8 +745,9 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
       "Use llm_wiki for wiki repository access instead of direct Git commands or direct file mutation.",
       "Follow the Karpathy LLM Wiki pattern: preserve source material, maintain derived knowledge separately, search before creating pages, integrate new evidence, and keep provenance.",
       "Write OKF v0.2 concept documents as Markdown with YAML frontmatter and a non-empty type; preserve unknown types and fields, and use index.md and log.md only as reserved documents.",
-      "Discover and preserve the connected repository layout; do not require raw/, wiki/, SPEC.md, AGENTS.md, or another repository-specific path.",
-      "For llm_wiki apply, label each file as source, concept, index, or log and submit every file for one complete semantic operation.",
+      "Start each semantic operation with llm_wiki status, then read every reported guidance file before other wiki content.",
+      "The repository is named llm-wiki; preserve immutable source material under raw/ and derived knowledge under wiki/.",
+      "For llm_wiki apply, label each file as source, concept, index, log, or schema and submit every file for one complete semantic operation.",
       "Preserve only non-sensitive personal facts stated by the user; never store secrets or inferred sensitive facts.",
     ],
     parameters: Type.Object({
@@ -675,7 +772,13 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
         Type.Array(
           Type.Object({
             path: Type.String(),
-            role: StringEnum(["source", "concept", "index", "log"] as const),
+            role: StringEnum([
+              "source",
+              "concept",
+              "index",
+              "log",
+              "schema",
+            ] as const),
             content: Type.String(),
             expected_sha256: Type.Optional(Type.String()),
           }),
@@ -684,7 +787,7 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
       ),
     }),
     async execute(_toolCallId, params, signal) {
-      const config = configFromEnvironment();
+      const config = await configFromEnvironment();
       const repository = new GitWikiRepository(config, (args, options) =>
         pi.exec("git", args, options),
       );
@@ -692,7 +795,7 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
       if (params.action === "status") {
         const status = await repository.status(signal);
         return textResult(
-          `Wiki synchronized at ${status.commit}\nPath: ${status.path}\nUpstream: ${status.upstream}`,
+          `Wiki synchronized at ${status.commit}\nPath: ${status.path}\nUpstream: ${status.upstream}\nGuidance: ${((status.guidanceFiles as string[]) ?? []).join(", ") || "none"}`,
           status,
         );
       }
@@ -757,25 +860,25 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
     "wiki-capture",
     "Capture and ingest a source into the Git-backed LLM wiki",
     (source) =>
-      `Capture and ingest this source into the LLM wiki: ${source}\nUse llm_wiki only for repository access. Discover and preserve the existing layout. Follow the built-in Karpathy and OKF workflow. Submit the complete operation with one apply action.`,
+      `Capture and ingest this source into the LLM wiki: ${source}\nUse llm_wiki only for repository access. Call status and read every reported guidance file first. Follow the built-in Karpathy and OKF workflow. Submit the complete operation with one apply action.`,
   );
   registerWorkflowCommand(
     "wiki-query",
     "Answer a question from the Git-backed LLM wiki",
     (question) =>
-      `Answer this question from the LLM wiki: ${question}\nUse llm_wiki to discover the layout, search, and read the supporting pages. Keep the query read-only unless I explicitly request a filed note.`,
+      `Answer this question from the LLM wiki: ${question}\nUse llm_wiki to call status and read every reported guidance file first. Then search and read the supporting pages. Keep the query read-only unless I explicitly request a filed note.`,
   );
   registerWorkflowCommand(
     "wiki-observe",
     "Preserve a durable personal fact in the Git-backed LLM wiki",
     (observation) =>
-      `Preserve this user-stated observation in the LLM wiki: ${observation}\nUse llm_wiki only for repository access. Discover and preserve the existing layout. Do not infer or store sensitive facts. Submit the complete operation with one observation apply action.`,
+      `Preserve this user-stated observation in the LLM wiki: ${observation}\nUse llm_wiki only for repository access. Call status and read every reported guidance file first. Do not infer or store sensitive facts. Submit the complete operation with one observation apply action.`,
   );
   registerWorkflowCommand(
     "wiki-lint",
     "Inspect the Git-backed LLM wiki without changing it",
     () =>
-      "Lint the LLM wiki. Use llm_wiki to discover the layout and inspect its OKF concepts, links, indexes, logs, and provenance. Report findings only. Do not apply fixes.",
+      "Lint the LLM wiki. Use llm_wiki to call status and read every reported guidance file first. Inspect its OKF concepts, links, indexes, logs, and provenance. Report findings only. Do not apply fixes.",
     false,
   );
   registerWorkflowCommand(

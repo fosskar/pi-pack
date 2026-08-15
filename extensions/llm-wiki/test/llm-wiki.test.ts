@@ -11,6 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import llmWikiExtension, {
+  discoverWikiPath,
   GitWikiRepository,
   type GitRunner,
 } from "../index.ts";
@@ -48,14 +49,17 @@ async function git(args: string[], cwd: string): Promise<string> {
 async function fixture(root: string) {
   const remote = join(root, "remote.git");
   const seed = join(root, "seed");
-  const clone = join(root, "wiki");
+  const clone = join(root, "llm-wiki");
 
   await git(["init", "--bare", remote], root);
   await git(["clone", remote, seed], root);
   await git(["switch", "-c", "main"], seed);
+  await mkdir(join(seed, "raw"), { recursive: true });
   await mkdir(join(seed, "wiki"), { recursive: true });
+  await writeFile(join(seed, "raw", ".gitkeep"), "");
+  await writeFile(join(seed, "SPEC.md"), "# Wiki format\n");
   await writeFile(join(seed, "wiki", "index.md"), "# Wiki\n");
-  await git(["add", "wiki/index.md"], seed);
+  await git(["add", "raw/.gitkeep", "SPEC.md", "wiki/index.md"], seed);
   await git(["commit", "-m", "seed wiki"], seed);
   await git(["push", "-u", "origin", "main"], seed);
   await git(["symbolic-ref", "HEAD", "refs/heads/main"], remote);
@@ -104,6 +108,8 @@ export default async function (): Promise<void> {
 
     const status = await repository.status();
     assert.equal(status.branch, "main");
+    assert.deepEqual(status.guidanceFiles, ["SPEC.md"]);
+    assert.equal(await discoverWikiPath(root), clone);
 
     const initial = await repository.read(["wiki/index.md"]);
     assert.equal(initial.files[0].content, "# Wiki\n");
@@ -162,6 +168,17 @@ export default async function (): Promise<void> {
     await expectFailure(
       readFile(join(verify, "wiki", "hook.md"), "utf8"),
       "ENOENT",
+    );
+
+    await expectFailure(
+      repository.apply("ingest", "wiki: reject misplaced source", [
+        {
+          path: "wiki/misplaced-source.md",
+          role: "source",
+          content: "source\n",
+        },
+      ]),
+      "source role requires a raw/ path",
     );
 
     await expectFailure(
