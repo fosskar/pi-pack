@@ -36,13 +36,18 @@ pi loads:
 for pi via home-manager:
 
 ```nix
+{ pkgs, ... }:
 {
   imports = [ inputs.pi-pack.homeModules.default ];
-  programs.pi-pack.enable = true;
+
+  programs.pi-pack = {
+    enable = true;
+    package = inputs.pi-pack.packages.${pkgs.stdenv.hostPlatform.system};
+  };
 }
 ```
 
-The module deploys the resources under `~/.pi/agent/` and installs Sediment. It does not install pi.
+The module deploys the resources under `~/.pi/agent/`. The `extensions` and `skills` options default to all available resources. Resource dependencies follow those selections, so Sediment is installed only when `sediment-memory.ts` is selected. The module does not install pi.
 
 for services that need one skill path:
 

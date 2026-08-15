@@ -3,6 +3,8 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
     llm-agents.url = "github:numtide/llm-agents.nix";
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
@@ -15,6 +17,7 @@
     {
       self,
       nixpkgs,
+      home-manager,
       llm-agents,
       treefmt-nix,
       nixbot,
@@ -67,6 +70,38 @@
 
       sedimentPackage = pkgs: pkgs.callPackage ./packages/sediment/package.nix { };
 
+      homeConfiguration =
+        pkgs: selectedExtensions:
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [
+            self.homeModules.default
+            (
+              { config, ... }:
+              {
+                home = {
+                  username = "pi-pack-test";
+                  homeDirectory = "/home/pi-pack-test";
+                  stateVersion = "26.05";
+                };
+                programs.pi-pack = {
+                  enable = true;
+                  package = self.packages.${pkgs.stdenv.hostPlatform.system};
+                  extensions = selectedExtensions;
+                };
+                assertions = [
+                  {
+                    assertion =
+                      builtins.elem "sediment-memory.ts" selectedExtensions
+                      == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.sediment config.home.packages;
+                    message = "Sediment installation must follow sediment-memory.ts selection";
+                  }
+                ];
+              }
+            )
+          ];
+        };
+
       treefmtEval = eachSystem (
         pkgs:
         treefmt-nix.lib.evalModule pkgs {
@@ -99,6 +134,10 @@
       checks = eachSystem (pkgs: {
         package = package pkgs;
         sediment = sedimentPackage pkgs;
+        home-manager = (homeConfiguration pkgs extensions).activationPackage;
+        home-manager-no-memory =
+          (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory.ts") extensions))
+          .activationPackage;
         extension-tests = pkgs.runCommand "pi-pack-extension-tests" { nativeBuildInputs = [ pkgs.bun ]; } ''
           cp -r ${self} source
           chmod -R u+w source
