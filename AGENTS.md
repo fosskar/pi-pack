@@ -7,6 +7,7 @@ pi-pack distributes Pi extensions, skills, prompt templates, and themes. Nix pac
 ## layout
 
 - `extensions/<name>/index.ts`: TypeScript extension entry points.
+- `extensions/<name>/README.md`: extension interface, configuration, lifecycle, and safety notes.
 - `extensions/<name>/test/<name>.test.ts`: colocated extension tests.
 - `skills/<name>/SKILL.md`: skill frontmatter and instructions. Keep referenced support files in the same skill directory.
 - `prompts/*.md`: prompt templates. The filename becomes the slash command.
@@ -55,6 +56,7 @@ Use `nix flake check` as the normal test entry point because the repository has 
 - Limit tool output before it enters model context.
 - Preserve cancellation signals for model calls, process calls, and network calls.
 - Reconstruct persistent state from session entries when an extension reloads.
+- Keep each extension README accurate when its interface, configuration, lifecycle, or safety behavior changes.
 
 Match the existing extension before adding an abstraction. `btw` and `sediment-memory` contain stateful examples. `clipboard` and `pi-to-PI` contain minimal examples.
 

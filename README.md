@@ -191,7 +191,7 @@ Home Manager can deploy one skill for another agent:
 <details>
 <summary><strong>btw</strong> - run a side conversation</summary>
 
-- **Source:** [`extensions/btw/index.ts`](extensions/btw/index.ts)
+- **Source:** [`extensions/btw/`](extensions/btw/)
 - **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
 - **Use:** Ask side questions without adding each turn to the main conversation.
 
@@ -200,7 +200,7 @@ Home Manager can deploy one skill for another agent:
 <details>
 <summary><strong>clipboard</strong> - copy text to the system clipboard</summary>
 
-- **Source:** [`extensions/clipboard/index.ts`](extensions/clipboard/index.ts)
+- **Source:** [`extensions/clipboard/`](extensions/clipboard/)
 - **Tool:** `copy_to_clipboard`
 - **Use:** Copy generated text through OSC52.
 
@@ -223,7 +223,7 @@ The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document bas
 <details>
 <summary><strong>sediment-memory</strong> - extract and recall long-term memories</summary>
 
-- **Source:** [`extensions/sediment-memory/index.ts`](extensions/sediment-memory/index.ts)
+- **Source:** [`extensions/sediment-memory/`](extensions/sediment-memory/)
 - **Command:** `/memory`
 - **Tool:** `memory_search`
 - **Requirement:** `sediment` in `PATH`
@@ -234,7 +234,7 @@ The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document bas
 <details>
 <summary><strong>oracle</strong> - ask another model for a second opinion</summary>
 
-- **Source:** [`extensions/oracle/index.ts`](extensions/oracle/index.ts)
+- **Source:** [`extensions/oracle/`](extensions/oracle/)
 - **Command:** `/oracle`
 - **Tool:** `second_opinion`
 
@@ -243,7 +243,7 @@ The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document bas
 <details>
 <summary><strong>pi-to-PI</strong> - rewrite <code>pi</code> for Anthropic models</summary>
 
-- **Source:** [`extensions/pi-to-PI/index.ts`](extensions/pi-to-PI/index.ts)
+- **Source:** [`extensions/pi-to-PI/`](extensions/pi-to-PI/)
 - **Use:** Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.
 
 </details>
