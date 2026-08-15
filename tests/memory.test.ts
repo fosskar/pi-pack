@@ -7,7 +7,7 @@ import {
   renderMemorySearchResults,
   type EvidenceRecord,
   type RecallResult,
-} from "../extensions/memory.ts";
+} from "../extensions/sediment-memory.ts";
 
 function testStructuredCapture(): void {
   const messages = [

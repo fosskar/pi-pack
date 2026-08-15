@@ -23,7 +23,7 @@ pi loads:
 - `extensions/`
 - `themes/`
 
-`memory.ts` requires the patched Sediment package in `PATH`. Nix users can install it with `nix profile install github:fosskar/pi-pack#sediment`.
+`sediment-memory.ts` requires the patched Sediment package in `PATH`. Nix users can install it with `nix profile install github:fosskar/pi-pack#sediment`.
 
 ## use as nix flake source
 
@@ -206,9 +206,9 @@ for services that need one skill path:
 </details>
 
 <details>
-<summary><strong>memory.ts</strong> - extract and recall long-term memories</summary>
+<summary><strong>sediment-memory.ts</strong> - extract and recall long-term memories</summary>
 
-- **Source:** [`extensions/memory.ts`](extensions/memory.ts)
+- **Source:** [`extensions/sediment-memory.ts`](extensions/sediment-memory.ts)
 - **Command:** `/memory`
 - **Tool:** `memory_search`
 - **Requirement:** `sediment` in `PATH`
@@ -253,7 +253,7 @@ nix flake check
 outputs:
 
 - `packages.<system>.default` — packaged pi assets under `share/pi-pack/`
-- `packages.<system>.sediment` — patched Sediment package for `memory.ts`
+- `packages.<system>.sediment` — patched Sediment package for `sediment-memory.ts`
 - `checks.<system>.extension-tests` — mocked extension load and unit tests
 - `checks.<system>.pi-compatibility` — real extension load with Pi from `llm-agents.nix`
 - `formatter.<system>` — treefmt wrapper
