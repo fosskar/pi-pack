@@ -132,7 +132,9 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>osm</strong> - query OpenStreetMap</summary>
 
 - **Source:** [`skills/osm/`](skills/osm/)
-- **Use:** Find places, nearby points of interest, and public transport stops.
+- **CLI:** `osm`
+- **Requirement:** Configure `OSM_NOMINATIM_URL` for geocoding.
+- **Use:** Find places, nearby points of interest, and public transport stops with bounded normalized output.
 
 </details>
 
@@ -269,6 +271,7 @@ outputs:
 
 - `packages.<system>.default` — packaged pi assets under `share/pi-pack/`
 - `packages.<system>.sediment` — patched Sediment package for `sediment-memory`
+- `packages.<system>.osm-cli` — OpenStreetMap CLI for the `osm` skill
 - `checks.<system>.extension-tests` — mocked extension load and unit tests
 - `checks.<system>.pi-compatibility` — real extension load with Pi from `llm-agents.nix`
 - `homeModules.default` — Home Manager resource and Sediment deployment

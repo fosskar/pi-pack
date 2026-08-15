@@ -1,91 +1,80 @@
 ---
 name: osm
-description: search places, find nearby POIs, and locate public transport stops using OpenStreetMap. use when user asks about nearby restaurants, shops, pharmacies, transit stops, or any real-world location query.
+description: Search places, find nearby points of interest, and locate public transport stops with OpenStreetMap.
 ---
 
-# osm
+# OpenStreetMap
 
-query OpenStreetMap via nominatim (geocoding) + overpass API (spatial queries). no API key needed.
+Use the `osm` CLI. Do not construct Nominatim URLs or Overpass QL.
 
-## rules
+## Geocoding policy
 
-- **read-only.** never edit or upload anything to OSM.
+Before using Nominatim, read and follow its public service policy:
 
-## geocoding — resolve address/place to coordinates
+<https://operations.osmfoundation.org/policies/nominatim/>
 
-```
-curl -s -H "User-Agent: pi-pack/1.0" "https://nominatim.openstreetmap.org/search?q=<ADDRESS>&format=json&limit=3"
-```
+The user must deliberately configure `OSM_NOMINATIM_URL`. Never use Nominatim for autocomplete, bulk geocoding, systematic queries, or complete POI downloads. Do not submit personal or confidential data.
 
-returns `lat`, `lon`, `display_name`. use coordinates for overpass queries.
+## Commands
 
-## reverse geocoding — coordinates to address
+Resolve a place:
 
-```
-curl -s -H "User-Agent: pi-pack/1.0" "https://nominatim.openstreetmap.org/reverse?lat=<LAT>&lon=<LON>&format=json"
+```bash
+osm geocode "Berlin Hauptbahnhof"
 ```
 
-## overpass — spatial queries
+Resolve coordinates:
 
-endpoint: `https://overpass-api.de/api/interpreter`
-
-### find nearby POIs
-
-```
-[out:json];
-node["amenity"="<TYPE>"](around:<RADIUS>,<LAT>,<LON>);
-out body 10;
+```bash
+osm reverse 52.5251 13.3694
 ```
 
-common amenity values: `restaurant`, `cafe`, `pharmacy`, `hospital`, `atm`, `supermarket`, `parking`, `fuel`, `pub`, `bar`, `fast_food`, `dentist`, `doctors`
+Find nearby places from a named center:
 
-### find nearby shops
-
-```
-[out:json];
-node["shop"="<TYPE>"](around:<RADIUS>,<LAT>,<LON>);
-out body 10;
+```bash
+osm nearby restaurant --near "Berlin Hauptbahnhof"
+osm nearby public_transport --near "Hamburg Hbf" --radius 1000
 ```
 
-common shop values: `supermarket`, `bakery`, `butcher`, `convenience`, `clothes`, `hairdresser`, `hardware`, `electronics`
+Find nearby places from coordinates:
 
-### find nearby public transport stops
-
-```
-[out:json];
-node["public_transport"="stop_position"](around:<RADIUS>,<LAT>,<LON>);
-out body 10;
+```bash
+osm nearby pharmacy --at 52.5251,13.3694
 ```
 
-### find by name
+Use an OSM tag when no category alias exists:
 
-```
-[out:json];
-node["name"~"<PATTERN>",i](around:<RADIUS>,<LAT>,<LON>);
-out body 10;
+```bash
+osm nearby tourism=museum --near "München Marienplatz"
 ```
 
-### combine multiple types
+Filter by name:
 
-```
-[out:json];
-(
-  node["amenity"="restaurant"](around:500,<LAT>,<LON>);
-  node["amenity"="cafe"](around:500,<LAT>,<LON>);
-);
-out body 10;
+```bash
+osm nearby any --near "Leipzig" --name "Central"
 ```
 
-default radius: 500m. increase to 1000 if too few results.
+Defaults are a 500-meter radius and 10 results. The maximums are 10 kilometers and 20 results.
 
-## presenting results
+## Categories
 
-- sort by distance from query point
-- show: name, type, approximate distance, address (if in tags)
-- for transport stops: include transport type from tags
+Common aliases include:
 
-## notes
+- `restaurant`, `cafe`, `pharmacy`, and `hospital`
+- `supermarket` and `bakery`
+- `public_transport`
+- `any`
 
-- nominatim: max 1 req/s, User-Agent header required
-- overpass: free, no auth
-- works worldwide
+## Results
+
+The CLI returns bounded JSON. Nearby results are sorted by distance and include normalized names, categories, coordinates, addresses, and OSM links.
+
+When presenting results:
+
+- Include the approximate distance.
+- Include the address when available.
+- Include the OSM link.
+- State `© OpenStreetMap contributors`.
+- Say when OSM has no matching result. Do not claim that no real-world place exists.
+
+The skill is read-only. Never edit or upload OSM data.
