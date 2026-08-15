@@ -35,6 +35,14 @@ pi install git:github.com/fosskar/pi-pack
 
 Pi records the package in `~/.pi/agent/settings.json`. Use `pi config` to enable or disable individual resources.
 
+The `llm-wiki` extension requires Git in `PATH`. Configure its local clone before use:
+
+```bash
+export LLM_WIKI_PATH="$HOME/Projects/llm-wiki"
+export LLM_WIKI_REMOTE="git@github.com:owner/llm-wiki.git" # needed to create or verify the clone
+export LLM_WIKI_BRANCH="main"                              # default: main
+```
+
 The `sediment-memory` extension also requires Sediment in `PATH`. Nix users without Home Manager can install it separately:
 
 ```bash
@@ -199,6 +207,18 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
+<summary><strong>llm-wiki</strong> - synchronize and update a Git-backed LLM wiki</summary>
+
+- **Source:** [`extensions/llm-wiki/`](extensions/llm-wiki/)
+- **Tool:** `llm_wiki`
+- **Actions:** `status`, `search`, `read`, and `apply`
+- **Commands:** `/wiki-capture`, `/wiki-query`, `/wiki-observe`, `/wiki-lint`, and `/wiki-status`
+- **Requirement:** `git` in `PATH`
+- **Use:** Safely operate an existing Git-backed wiki without GitHub APIs.
+
+</details>
+
+<details>
 <summary><strong>sediment-memory</strong> - extract and recall long-term memories</summary>
 
 - **Source:** [`extensions/sediment-memory/index.ts`](extensions/sediment-memory/index.ts)
@@ -256,6 +276,8 @@ outputs:
 ## Security
 
 extensions execute code in the agent process. review them before installing from git.
+
+`llm-wiki` commits and pushes successful mutation operations. It stops on dirty state, divergence, stale content, validation errors, locks, and push rejection.
 
 skills can instruct an agent to run commands. review them before enabling in unattended services.
 
