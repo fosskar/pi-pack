@@ -37,18 +37,12 @@ for pi via home-manager:
 
 ```nix
 {
-  home.packages = [
-    inputs.pi-pack.packages.${pkgs.stdenv.hostPlatform.system}.sediment
-  ];
-
-  home.file = {
-    ".pi/agent/skills".source = "${inputs.pi-pack}/skills";
-    ".pi/agent/prompts".source = "${inputs.pi-pack}/prompts";
-    ".pi/agent/extensions".source = "${inputs.pi-pack}/extensions";
-    ".pi/agent/themes".source = "${inputs.pi-pack}/themes";
-  };
+  imports = [ inputs.pi-pack.homeModules.default ];
+  programs.pi-pack.enable = true;
 }
 ```
+
+The module deploys the resources under `~/.pi/agent/` and installs Sediment. It does not install pi.
 
 for services that need one skill path:
 
@@ -256,6 +250,7 @@ outputs:
 - `packages.<system>.sediment` — patched Sediment package for `sediment-memory.ts`
 - `checks.<system>.extension-tests` — mocked extension load and unit tests
 - `checks.<system>.pi-compatibility` — real extension load with Pi from `llm-agents.nix`
+- `homeModules.default` — Home Manager resource and Sediment deployment
 - `formatter.<system>` — treefmt wrapper
 - `lib.skills`, `lib.prompts`, `lib.extensions`, `lib.themes` — discovered asset names
 

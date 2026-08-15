@@ -144,6 +144,16 @@
           ;
       };
 
+      homeModules.default = import ./nix/home-manager.nix {
+        inherit
+          self
+          extensions
+          skills
+          prompts
+          themes
+          ;
+      };
+
       formatter = eachSystem (pkgs: treefmtEval.${pkgs.stdenv.hostPlatform.system}.config.build.wrapper);
 
       # nixbot scheduled effects
