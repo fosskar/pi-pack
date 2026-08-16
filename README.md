@@ -142,7 +142,9 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>paperless</strong> - search and browse paperless-ngx</summary>
 
 - **Source:** [`skills/paperless/`](skills/paperless/)
-- **Use:** Find documents, receipts, invoices, and scans.
+- **CLI:** `paperless`
+- **Requirement:** `PAPERLESS_URL` and `PAPERLESS_API_TOKEN`
+- **Use:** Search and read documents, receipts, invoices, and scans through a bounded read-only interface.
 
 </details>
 
@@ -272,6 +274,7 @@ outputs:
 - `packages.<system>.default` — packaged pi assets under `share/pi-pack/`
 - `packages.<system>.sediment` — patched Sediment package for `sediment-memory`
 - `packages.<system>.osm-cli` — OpenStreetMap CLI for the `osm` skill
+- `packages.<system>.paperless-cli` — read-only Paperless-ngx CLI for the `paperless` skill
 - `checks.<system>.extension-tests` — mocked extension load and unit tests
 - `checks.<system>.pi-compatibility` — real extension load with Pi from `llm-agents.nix`
 - `homeModules.default` — Home Manager resource and Sediment deployment

@@ -70,6 +70,7 @@
 
       sedimentPackage = pkgs: pkgs.callPackage ./nix/packages/sediment/package.nix { };
       osmCliPackage = pkgs: pkgs.callPackage ./skills/osm { };
+      paperlessCliPackage = pkgs: pkgs.callPackage ./skills/paperless { };
 
       homeConfiguration =
         pkgs: selectedExtensions: selectedSkills:
@@ -108,6 +109,13 @@
                       == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.osm-cli config.home.packages;
                     message = "osm-cli installation must follow osm skill selection";
                   }
+                  {
+                    assertion =
+                      builtins.elem "paperless" selectedSkills
+                      == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.paperless-cli
+                        config.home.packages;
+                    message = "paperless-cli installation must follow paperless skill selection";
+                  }
                 ];
               }
             )
@@ -141,12 +149,14 @@
       packages = eachSystem (pkgs: {
         default = package pkgs;
         osm-cli = osmCliPackage pkgs;
+        paperless-cli = paperlessCliPackage pkgs;
         sediment = sedimentPackage pkgs;
       });
 
       checks = eachSystem (pkgs: {
         package = package pkgs;
         osm-cli = osmCliPackage pkgs;
+        paperless-cli = paperlessCliPackage pkgs;
         sediment = sedimentPackage pkgs;
         home-manager = (homeConfiguration pkgs extensions skills).activationPackage;
         home-manager-no-memory =
@@ -157,6 +167,9 @@
           .activationPackage;
         home-manager-no-osm =
           (homeConfiguration pkgs extensions (builtins.filter (name: name != "osm") skills))
+          .activationPackage;
+        home-manager-no-paperless =
+          (homeConfiguration pkgs extensions (builtins.filter (name: name != "paperless") skills))
           .activationPackage;
         extension-tests =
           pkgs.runCommand "pi-pack-extension-tests"

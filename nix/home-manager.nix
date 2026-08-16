@@ -27,6 +27,7 @@ let
     extensions.llm-wiki = [ pkgs.git ];
     extensions.sediment-memory = [ cfg.package.sediment ];
     skills.osm = [ cfg.package.osm-cli ];
+    skills.paperless = [ cfg.package.paperless-cli ];
   };
 in
 {
