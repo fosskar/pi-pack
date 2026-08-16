@@ -51,7 +51,7 @@ Home Manager can deploy one skill for another agent:
 
 ### Skills
 
-| skill                                              | use                                                                                                                                                                             |
+| skill                                              | description                                                                                                                                                                     |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [agents-md](skills/agents-md/)                     | Bootstrap an `AGENTS.md` or check one for stale claims.                                                                                                                         |
 | [architecture-review](skills/architecture-review/) | Create a visual HTML report and explore a selected codebase architecture problem.                                                                                               |
@@ -68,29 +68,29 @@ Home Manager can deploy one skill for another agent:
 
 ### Prompts
 
-| prompt                        | commands            | use                                                                                               |
-| ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------- |
-| [commit](prompts/commit.md)   | `/commit`           | Split the current work into atomic commits with jj. It does not move bookmarks and does not push. |
-| [publish](prompts/publish.md) | `/publish [remote]` | Rebase on `origin` and push `main` to a remote.                                                   |
+| prompt                        | description                                                                                       | commands            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- | ------------------- |
+| [commit](prompts/commit.md)   | Split the current work into atomic commits with jj. It does not move bookmarks and does not push. | `/commit`           |
+| [publish](prompts/publish.md) | Rebase on `origin` and push `main` to a remote.                                                   | `/publish [remote]` |
 
 ### Themes
 
-| theme                                | use                                                                                   |
+| theme                                | description                                                                           |
 | ------------------------------------ | ------------------------------------------------------------------------------------- |
 | [grey-amber](themes/grey-amber.json) | A dark grey theme with amber accents. Set `"theme": "grey-amber"` in `settings.json`. |
 | [grey-teal](themes/grey-teal.json)   | A dark grey theme with teal accents. Set `"theme": "grey-teal"` in `settings.json`.   |
 
 ### Extensions
 
-| extension                                      | commands                                                                      | use                                                                                                                                                                                            |
-| ---------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [btw](extensions/btw/)                         | `/btw` and seven subcommands                                                  | Ask side questions without adding each turn to the main conversation.                                                                                                                          |
-| [clipboard](extensions/clipboard/)             |                                                                               | Copy generated text through OSC52. Requires a terminal that accepts OSC52 clipboard writes.                                                                                                    |
-| [llm-wiki](extensions/llm-wiki/)               | `/wiki-capture`, `/wiki-query`, `/wiki-observe`, `/wiki-lint`, `/wiki-status` | Safely operate an existing Git-backed wiki without GitHub APIs. Requires `git` in `PATH` and a Git repository named `llm-wiki`. pi-pack does not create it.                                    |
-| [oracle](extensions/oracle/)                   | `/oracle`                                                                     | Ask a second model to review, critique, or challenge a conclusion. Requires a second configured model provider.                                                                                |
-| [pi-to-PI](extensions/pi-to-PI/)               |                                                                               | Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.                                                                                                                     |
-| [sediment-memory](extensions/sediment-memory/) | `/memory`                                                                     | Keep durable facts across sessions and recall them later. Requires `sediment` in `PATH`; Home Manager installs it, other Nix setups run `nix profile install github:fosskar/pi-pack#sediment`. |
-| [sketch](extensions/sketch/)                   | `/sketch`                                                                     | Open a browser sketch pad and send the result as image input. Requires a browser on the machine that runs Pi.                                                                                  |
+| extension                                      | description                                                                                                                                                                                    | commands                                                                      |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [btw](extensions/btw/)                         | Ask side questions without adding each turn to the main conversation.                                                                                                                          | `/btw` and seven subcommands                                                  |
+| [clipboard](extensions/clipboard/)             | Copy generated text through OSC52. Requires a terminal that accepts OSC52 clipboard writes.                                                                                                    |                                                                               |
+| [llm-wiki](extensions/llm-wiki/)               | Safely operate an existing Git-backed wiki without GitHub APIs. Requires `git` in `PATH` and a Git repository named `llm-wiki`. pi-pack does not create it.                                    | `/wiki-capture`, `/wiki-query`, `/wiki-observe`, `/wiki-lint`, `/wiki-status` |
+| [oracle](extensions/oracle/)                   | Ask a second model to review, critique, or challenge a conclusion. Requires a second configured model provider.                                                                                | `/oracle`                                                                     |
+| [pi-to-PI](extensions/pi-to-PI/)               | Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.                                                                                                                     |                                                                               |
+| [sediment-memory](extensions/sediment-memory/) | Keep durable facts across sessions and recall them later. Requires `sediment` in `PATH`; Home Manager installs it, other Nix setups run `nix profile install github:fosskar/pi-pack#sediment`. | `/memory`                                                                     |
+| [sketch](extensions/sketch/)                   | Open a browser sketch pad and send the result as image input. Requires a browser on the machine that runs Pi.                                                                                  | `/sketch`                                                                     |
 
 ## Develop
 
