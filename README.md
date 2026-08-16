@@ -70,27 +70,29 @@ Home Manager can deploy one skill for another agent:
 
 ### Skills
 
-| skill                                              | description                                                                                                                                                                     |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [agents-md](skills/agents-md/)                     | Bootstrap an `AGENTS.md` or check one for stale claims.                                                                                                                         |
-| [architecture-review](skills/architecture-review/) | Create a visual HTML report and explore a selected codebase architecture problem.                                                                                               |
-| [create-skills](skills/create-skills/)             | Apply the included rules and references when you write agent documents.                                                                                                         |
-| [grilling](skills/grilling/)                       | Question the user until the plan or decision is clear. Original skill by [Matt Pocock](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md).   |
-| [handoff](skills/handoff/)                         | Compact the current conversation into a handoff document.                                                                                                                       |
-| [huh](skills/huh/)                                 | Give a clearer and simpler explanation of the last answer.                                                                                                                      |
-| [nixbot-check](skills/nixbot-check/)               | Find, classify, reproduce, and monitor nixbot failures. Requires `nbo` from the `nixbot-cli` package, and `NIXBOT_URL` for a self-hosted instance. pi-pack does not install it. |
-| [ops-review](skills/ops-review/)                   | Create a visual HTML report and examine a selected infrastructure risk.                                                                                                         |
-| [osm](skills/osm/)                                 | Find places, nearby points of interest, and public transport stops.                                                                                                             |
-| [paperless](skills/paperless/)                     | Search and read documents, receipts, invoices, and scans through a bounded read-only interface. Requires a paperless-ngx instance, `PAPERLESS_URL`, and `PAPERLESS_API_TOKEN`.  |
-| [review-pong](skills/review-pong/)                 | Ask a second model to challenge review findings until the verdicts are stable.                                                                                                  |
-| [teach](skills/teach/)                             | Teach the user a skill or concept in the current workspace.                                                                                                                     |
+| skill                                              | description                                                                                                                                                                                                                        |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [agents-md](skills/agents-md/)                     | Bootstrap an `AGENTS.md` or check one for stale claims.                                                                                                                                                                            |
+| [architecture-review](skills/architecture-review/) | Create a visual HTML report and explore a selected codebase architecture problem.                                                                                                                                                  |
+| [create-skills](skills/create-skills/)             | Apply the included rules and references when you write agent documents.                                                                                                                                                            |
+| [grilling](skills/grilling/)                       | Question the user until the plan or decision is clear. Original skill by [mattpocock/skills](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md).                                                |
+| [handoff](skills/handoff/)                         | Compact the current conversation into a handoff document.                                                                                                                                                                          |
+| [huh](skills/huh/)                                 | Give a clearer and simpler explanation of the last answer.                                                                                                                                                                         |
+| [nixbot-check](skills/nixbot-check/)               | Find, classify, reproduce, and monitor nixbot failures. Requires `nbo` from the `nixbot-cli` package of [Mic92/nixbot](https://github.com/Mic92/nixbot), and `NIXBOT_URL` for a self-hosted instance. pi-pack does not install it. |
+| [ops-review](skills/ops-review/)                   | Create a visual HTML report and examine a selected infrastructure risk.                                                                                                                                                            |
+| [osm](skills/osm/)                                 | Find places, nearby points of interest, and public transport stops.                                                                                                                                                                |
+| [paperless](skills/paperless/)                     | Search and read documents, receipts, invoices, and scans through a bounded read-only interface. Requires a paperless-ngx instance, `PAPERLESS_URL`, and `PAPERLESS_API_TOKEN`.                                                     |
+| [review-pong](skills/review-pong/)                 | Ask a second model to challenge review findings until the verdicts are stable.                                                                                                                                                     |
+| [teach](skills/teach/)                             | Teach the user a skill or concept in the current workspace.                                                                                                                                                                        |
 
 ### Themes
 
-| theme                                | description                                                                           |
-| ------------------------------------ | ------------------------------------------------------------------------------------- |
-| [grey-amber](themes/grey-amber.json) | A dark grey theme with amber accents. Set `"theme": "grey-amber"` in `settings.json`. |
-| [grey-teal](themes/grey-teal.json)   | A dark grey theme with teal accents. Set `"theme": "grey-teal"` in `settings.json`.   |
+Set `"theme": "<name>"` in `settings.json`.
+
+| theme                                | description                           |
+| ------------------------------------ | ------------------------------------- |
+| [grey-amber](themes/grey-amber.json) | A dark grey theme with amber accents. |
+| [grey-teal](themes/grey-teal.json)   | A dark grey theme with teal accents.  |
 
 ## Develop
 
