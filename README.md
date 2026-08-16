@@ -104,7 +104,8 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>nixbot-check</strong> - triage nixbot CI</summary>
 
 - **Source:** [`skills/nixbot-check/`](skills/nixbot-check/)
-- **Use:** Find, classify, reproduce, and monitor nixbot failures with `nbo`.
+- **Use:** Find, classify, reproduce, and monitor nixbot failures.
+- **Requires:** `nbo` from the `nixbot-cli` package, and `NIXBOT_URL` for a self-hosted instance. pi-pack does not install it.
 
 </details>
 
@@ -120,8 +121,6 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>osm</strong> - query OpenStreetMap</summary>
 
 - **Source:** [`skills/osm/`](skills/osm/)
-- **CLI:** `osm`
-- **Requirement:** Configure `OSM_NOMINATIM_URL` for geocoding.
 - **Use:** Find places, nearby points of interest, and public transport stops with bounded normalized output.
 
 </details>
@@ -130,9 +129,8 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>paperless</strong> - search and browse paperless-ngx</summary>
 
 - **Source:** [`skills/paperless/`](skills/paperless/)
-- **CLI:** `paperless`
-- **Requirement:** `PAPERLESS_URL` and `PAPERLESS_API_TOKEN`
 - **Use:** Search and read documents, receipts, invoices, and scans through a bounded read-only interface.
+- **Requires:** A paperless-ngx instance, `PAPERLESS_URL`, and `PAPERLESS_API_TOKEN`.
 
 </details>
 
@@ -165,7 +163,7 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>grey-amber.json</strong> - dark grey theme with amber accents</summary>
 
 - **Source:** [`themes/grey-amber.json`](themes/grey-amber.json)
-- **Name:** `grey-amber`
+- **Use:** Set `"theme": "grey-amber"` in `settings.json`.
 
 </details>
 
@@ -173,7 +171,7 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>grey-teal.json</strong> - dark grey theme with teal accents</summary>
 
 - **Source:** [`themes/grey-teal.json`](themes/grey-teal.json)
-- **Name:** `grey-teal`
+- **Use:** Set `"theme": "grey-teal"` in `settings.json`.
 
 </details>
 
@@ -183,8 +181,8 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>btw</strong> - run a side conversation</summary>
 
 - **Source:** [`extensions/btw/`](extensions/btw/)
-- **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
 - **Use:** Ask side questions without adding each turn to the main conversation.
+- **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
 
 </details>
 
@@ -192,8 +190,8 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>clipboard</strong> - copy text to the system clipboard</summary>
 
 - **Source:** [`extensions/clipboard/`](extensions/clipboard/)
-- **Tool:** `copy_to_clipboard`
 - **Use:** Copy generated text through OSC52.
+- **Requires:** A terminal that accepts OSC52 clipboard writes.
 
 </details>
 
@@ -201,11 +199,9 @@ Home Manager can deploy one skill for another agent:
 <summary><strong>llm-wiki</strong> - synchronize and update a Git-backed LLM wiki</summary>
 
 - **Source:** [`extensions/llm-wiki/`](extensions/llm-wiki/)
-- **Tool:** `llm_wiki`
-- **Actions:** `status`, `search`, `read`, and `apply`
-- **Commands:** `/wiki-capture`, `/wiki-query`, `/wiki-observe`, `/wiki-lint`, and `/wiki-status`
-- **Requirement:** `git` in `PATH`
 - **Use:** Safely operate an existing Git-backed wiki without GitHub APIs.
+- **Commands:** `/wiki-capture`, `/wiki-query`, `/wiki-observe`, `/wiki-lint`, and `/wiki-status`
+- **Requires:** `git` in `PATH`, and a Git repository named `llm-wiki`. pi-pack does not create it.
 
 The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document baseline. It requires a Git repository named `llm-wiki` with top-level `raw/` and `wiki/` directories. `SPEC.md`, `AGENTS.md`, and other supported schema files are optional. The extension reports each available schema file for the agent to read before semantic work.
 
@@ -217,12 +213,9 @@ The extension searches the working directory and its parents for the repository.
 <summary><strong>sediment-memory</strong> - extract and recall long-term memories</summary>
 
 - **Source:** [`extensions/sediment-memory/`](extensions/sediment-memory/)
-- **Command:** `/memory`
-- **Tool:** `memory_search`
-- **Requirement:** `sediment` in `PATH`
-- **Nix package:** `packages.<system>.sediment`
-
-Nix users without Home Manager can install Sediment separately:
+- **Use:** Keep durable facts across sessions and recall them later.
+- **Commands:** `/memory`
+- **Requires:** `sediment` in `PATH`. Home Manager installs it. Other Nix setups install it separately.
 
 ```bash
 nix profile install github:fosskar/pi-pack#sediment
@@ -236,8 +229,9 @@ nix profile install github:fosskar/pi-pack#sediment
 <summary><strong>oracle</strong> - ask another model for a second opinion</summary>
 
 - **Source:** [`extensions/oracle/`](extensions/oracle/)
-- **Command:** `/oracle`
-- **Tool:** `second_opinion`
+- **Use:** Ask a second model to review, critique, or challenge a conclusion.
+- **Commands:** `/oracle`
+- **Requires:** A second configured model provider.
 
 </details>
 
@@ -253,8 +247,9 @@ nix profile install github:fosskar/pi-pack#sediment
 <summary><strong>sketch/</strong> - draw image input in a browser</summary>
 
 - **Source:** [`extensions/sketch/`](extensions/sketch/)
-- **Command:** `/sketch`
 - **Use:** Open a browser sketch pad and send the result as image input.
+- **Commands:** `/sketch`
+- **Requires:** A browser on the machine that runs Pi.
 
 </details>
 
