@@ -52,7 +52,7 @@ Home Manager can deploy one skill for another agent:
 ### Skills
 
 <details>
-<summary><strong>agents-md</strong> - create or update a repository <code>AGENTS.md</code></summary>
+<summary><strong>agents-md</strong></summary>
 
 - **Source:** [`skills/agents-md/`](skills/agents-md/)
 - **Use:** Bootstrap an `AGENTS.md` or check one for stale claims.
@@ -60,7 +60,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>architecture-review</strong> - find codebase architecture problems</summary>
+<summary><strong>architecture-review</strong></summary>
 
 - **Source:** [`skills/architecture-review/`](skills/architecture-review/)
 - **Use:** Create a visual HTML report and explore a selected problem.
@@ -68,7 +68,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>create-skills</strong> - write agent documents and skills</summary>
+<summary><strong>create-skills</strong></summary>
 
 - **Source:** [`skills/create-skills/`](skills/create-skills/)
 - **Use:** Apply the included rules and references when you write agent documents.
@@ -76,7 +76,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>grilling</strong> - stress-test a plan or decision</summary>
+<summary><strong>grilling</strong></summary>
 
 - **Source:** [`skills/grilling/`](skills/grilling/)
 - **Use:** Question the user until the plan or decision is clear.
@@ -85,7 +85,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>handoff</strong> - create a handoff for another agent</summary>
+<summary><strong>handoff</strong></summary>
 
 - **Source:** [`skills/handoff/`](skills/handoff/)
 - **Use:** Compact the current conversation into a handoff document.
@@ -93,7 +93,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>huh</strong> - explain the last answer again</summary>
+<summary><strong>huh</strong></summary>
 
 - **Source:** [`skills/huh/`](skills/huh/)
 - **Use:** Give a clearer and simpler explanation of the last answer.
@@ -101,7 +101,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>nixbot-check</strong> - triage nixbot CI</summary>
+<summary><strong>nixbot-check</strong></summary>
 
 - **Source:** [`skills/nixbot-check/`](skills/nixbot-check/)
 - **Use:** Find, classify, reproduce, and monitor nixbot failures.
@@ -110,7 +110,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>ops-review</strong> - find infrastructure operation risks</summary>
+<summary><strong>ops-review</strong></summary>
 
 - **Source:** [`skills/ops-review/`](skills/ops-review/)
 - **Use:** Create a visual HTML report and examine a selected risk.
@@ -118,7 +118,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>osm</strong> - query OpenStreetMap</summary>
+<summary><strong>osm</strong></summary>
 
 - **Source:** [`skills/osm/`](skills/osm/)
 - **Use:** Find places, nearby points of interest, and public transport stops with bounded normalized output.
@@ -126,7 +126,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>paperless</strong> - search and browse paperless-ngx</summary>
+<summary><strong>paperless</strong></summary>
 
 - **Source:** [`skills/paperless/`](skills/paperless/)
 - **Use:** Search and read documents, receipts, invoices, and scans through a bounded read-only interface.
@@ -135,7 +135,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>review-pong</strong> - challenge code review findings</summary>
+<summary><strong>review-pong</strong></summary>
 
 - **Source:** [`skills/review-pong/`](skills/review-pong/)
 - **Use:** Ask a second model to challenge findings until the verdicts are stable.
@@ -143,10 +143,10 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>teach</strong> - teach a skill or concept</summary>
+<summary><strong>teach</strong></summary>
 
 - **Source:** [`skills/teach/`](skills/teach/)
-- **Use:** Teach the user in the current workspace.
+- **Use:** Teach the user a skill or concept in the current workspace.
 
 </details>
 
@@ -160,25 +160,25 @@ Home Manager can deploy one skill for another agent:
 ### Themes
 
 <details>
-<summary><strong>grey-amber.json</strong> - dark grey theme with amber accents</summary>
+<summary><strong>grey-amber.json</strong></summary>
 
 - **Source:** [`themes/grey-amber.json`](themes/grey-amber.json)
-- **Use:** Set `"theme": "grey-amber"` in `settings.json`.
+- **Use:** A dark grey theme with amber accents. Set `"theme": "grey-amber"` in `settings.json`.
 
 </details>
 
 <details>
-<summary><strong>grey-teal.json</strong> - dark grey theme with teal accents</summary>
+<summary><strong>grey-teal.json</strong></summary>
 
 - **Source:** [`themes/grey-teal.json`](themes/grey-teal.json)
-- **Use:** Set `"theme": "grey-teal"` in `settings.json`.
+- **Use:** A dark grey theme with teal accents. Set `"theme": "grey-teal"` in `settings.json`.
 
 </details>
 
 ### Extensions
 
 <details>
-<summary><strong>btw</strong> - run a side conversation</summary>
+<summary><strong>btw</strong></summary>
 
 - **Source:** [`extensions/btw/`](extensions/btw/)
 - **Use:** Ask side questions without adding each turn to the main conversation.
@@ -187,7 +187,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>clipboard</strong> - copy text to the system clipboard</summary>
+<summary><strong>clipboard</strong></summary>
 
 - **Source:** [`extensions/clipboard/`](extensions/clipboard/)
 - **Use:** Copy generated text through OSC52.
@@ -196,7 +196,7 @@ Home Manager can deploy one skill for another agent:
 </details>
 
 <details>
-<summary><strong>llm-wiki</strong> - synchronize and update a Git-backed LLM wiki</summary>
+<summary><strong>llm-wiki</strong></summary>
 
 - **Source:** [`extensions/llm-wiki/`](extensions/llm-wiki/)
 - **Use:** Safely operate an existing Git-backed wiki without GitHub APIs.
@@ -210,7 +210,7 @@ The extension searches the working directory and its parents for the repository.
 </details>
 
 <details>
-<summary><strong>sediment-memory</strong> - extract and recall long-term memories</summary>
+<summary><strong>sediment-memory</strong></summary>
 
 - **Source:** [`extensions/sediment-memory/`](extensions/sediment-memory/)
 - **Use:** Keep durable facts across sessions and recall them later.
@@ -226,7 +226,7 @@ nix profile install github:fosskar/pi-pack#sediment
 </details>
 
 <details>
-<summary><strong>oracle</strong> - ask another model for a second opinion</summary>
+<summary><strong>oracle</strong></summary>
 
 - **Source:** [`extensions/oracle/`](extensions/oracle/)
 - **Use:** Ask a second model to review, critique, or challenge a conclusion.
@@ -236,7 +236,7 @@ nix profile install github:fosskar/pi-pack#sediment
 </details>
 
 <details>
-<summary><strong>pi-to-PI</strong> - rewrite <code>pi</code> for Anthropic models</summary>
+<summary><strong>pi-to-PI</strong></summary>
 
 - **Source:** [`extensions/pi-to-PI/`](extensions/pi-to-PI/)
 - **Use:** Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.
@@ -244,7 +244,7 @@ nix profile install github:fosskar/pi-pack#sediment
 </details>
 
 <details>
-<summary><strong>sketch/</strong> - draw image input in a browser</summary>
+<summary><strong>sketch</strong></summary>
 
 - **Source:** [`extensions/sketch/`](extensions/sketch/)
 - **Use:** Open a browser sketch pad and send the result as image input.
