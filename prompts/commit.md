@@ -10,10 +10,11 @@ rules:
 - atomic means coherent and easy to review/revert, not maximal splitting.
 - if small changes belong to the same task, keep them together.
 - split only when changes are unrelated or would be easier to review/revert separately.
-- commit msg: lowercase, concise, imperative.
-- focus msg on why.
-- no conventional commit prefixes.
-- docs-only commit msg must start with `docs:`.
+- commit msg: lowercase, imperative, no trailing period.
+- subject ~50 chars, hard cap 72.
+- optional `<area>: ` prefix; use the exact module, option, or path name. `docs` is the area for docs-only changes.
+- no conventional commit types (`feat:`, `chore:`, `fix:`).
+- add a body only when it adds context. wrap at ~72 cols. explain what and why, not how.
 - keep it simple.
 
 `jj describe` vs `jj commit`:
@@ -26,6 +27,7 @@ flow:
 1. inspect
    - `jj status`
    - `jj diff --stat`
+   - `jj diff` — read the actual content; file names alone cannot justify a message
 2. if changes are clearly unrelated, split by logical file groups
    - `jj split -m "<msg>" -- <paths...>`
 3. commit remaining change

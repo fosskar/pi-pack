@@ -8,7 +8,7 @@ publish committed work to target remote. `origin` is source of truth. push only 
 argument:
 
 - target remote is `$1`; if blank, use `origin`.
-- accepted values: `origin` or `rad`.
+- accepted values: `origin` or `rad`. on any other value, stop and report.
 - when running commands, replace `<target-remote>` with selected target.
 
 remote rules:
@@ -19,7 +19,7 @@ remote rules:
 
 preconditions:
 
-- `@` must be clean; stop if there are uncommitted changes.
+- the working copy must have no changes; stop if `@` is not empty.
 - `@-` must be non-empty; stop if empty.
 
 flow:
@@ -46,7 +46,7 @@ flow:
 
 guardrails:
 
-- never set `main` to `@` when `@` is empty.
+- never set `main` to an empty commit; stop instead.
 - on push reject:
   - `origin`: refetch origin, `jj rebase -d main@origin`, push again once.
   - `rad`: stop and report — rad should not diverge from origin. do not force.

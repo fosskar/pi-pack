@@ -166,11 +166,10 @@ Home Manager can deploy one skill for another agent:
 
 ### Prompts
 
-| name          | purpose                       |
-| ------------- | ----------------------------- |
-| `commit.md`   | commit current work with jj   |
-| `jjcommit.md` | atomic jj commit workflow     |
-| `publish.md`  | publish committed work safely |
+| name         | purpose                       |
+| ------------ | ----------------------------- |
+| `commit.md`  | commit current work with jj   |
+| `publish.md` | publish committed work safely |
 
 ### Themes
 
