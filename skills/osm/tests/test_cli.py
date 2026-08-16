@@ -6,7 +6,14 @@ import unittest
 from pathlib import Path
 from typing import Any
 
-from osm_cli.cli import CliError, category_tags, haversine, overpass_query, run
+from osm_cli.cli import (
+    DEFAULT_NOMINATIM_URL,
+    CliError,
+    category_tags,
+    haversine,
+    overpass_query,
+    run,
+)
 
 
 class FakeHttp:
@@ -65,11 +72,15 @@ class OsmCliTest(unittest.TestCase):
             for path in directory.iterdir():
                 self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
-    def test_geocode_requires_configuration(self) -> None:
-        with self.assertRaises(CliError) as raised:
-            run(["geocode", "Berlin"], environment={}, http=FakeHttp())
-        self.assertEqual(raised.exception.document["error"], "nominatim_not_configured")
-        self.assertIn("policy", raised.exception.document)
+    def test_geocode_uses_default_endpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as cache:
+            http = FakeHttp(
+                get=[[{"lat": "52.5", "lon": "13.4", "display_name": "Berlin"}]]
+            )
+            environment = self.environment(cache)
+            del environment["OSM_NOMINATIM_URL"]
+            run(["geocode", "Berlin"], environment=environment, http=http)
+        self.assertEqual(http.get_calls[0][0], f"{DEFAULT_NOMINATIM_URL}/search")
 
     def test_geocode_rejects_invalid_coordinates(self) -> None:
         with tempfile.TemporaryDirectory() as cache:

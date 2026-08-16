@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 ATTRIBUTION = "© OpenStreetMap contributors"
-NOMINATIM_POLICY = "https://operations.osmfoundation.org/policies/nominatim/"
+DEFAULT_NOMINATIM_URL = "https://nominatim.openstreetmap.org"
 DEFAULT_OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 DEFAULT_USER_AGENT = "pi-pack-osm/0.1 (+https://github.com/fosskar/pi-pack)"
 MAX_LIMIT = 20
@@ -110,13 +110,7 @@ def nominatim_request(
     environment: Mapping[str, str],
     http: HttpClient,
 ) -> Any:
-    endpoint = environment.get("OSM_NOMINATIM_URL")
-    if not endpoint:
-        raise CliError(
-            "nominatim_not_configured",
-            "Set OSM_NOMINATIM_URL after reviewing the Nominatim usage policy",
-            policy=NOMINATIM_POLICY,
-        )
+    endpoint = environment.get("OSM_NOMINATIM_URL") or DEFAULT_NOMINATIM_URL
 
     directory = cache_directory(environment)
     encoded = json.dumps(

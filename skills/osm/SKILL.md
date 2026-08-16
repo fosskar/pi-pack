@@ -13,7 +13,7 @@ Before using Nominatim, read and follow its public service policy:
 
 <https://operations.osmfoundation.org/policies/nominatim/>
 
-The user must deliberately configure `OSM_NOMINATIM_URL`. Never use Nominatim for autocomplete, bulk geocoding, systematic queries, or complete POI downloads. Do not submit personal or confidential data.
+The CLI calls the public Nominatim service unless `OSM_NOMINATIM_URL` selects another endpoint. Never use Nominatim for autocomplete, bulk geocoding, systematic queries, or complete POI downloads. Do not submit personal or confidential data.
 
 ## Commands
 

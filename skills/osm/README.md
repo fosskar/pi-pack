@@ -6,30 +6,19 @@ The CLI replaces raw `curl` commands and Overpass QL in agent instructions. It n
 
 ## Setup
 
-Nearby searches with explicit coordinates work without Nominatim:
+The CLI works without configuration. It calls the public Nominatim and Overpass services and sends an identifying user agent.
+
+Read the [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/). The public service permits only moderate, user-triggered use and prohibits autocomplete, systematic queries, and complete POI downloads. The CLI enforces result limits, a radius limit, one request per second, and an on-disk cache.
+
+Override the endpoints to use your own instances:
 
 ```bash
-osm nearby cafe --at 52.5251,13.3694
-```
-
-Geocoding, reverse geocoding, and `--near` require a configured Nominatim endpoint.
-
-Read the [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/) before selecting an endpoint. The public service permits only moderate, user-triggered use and prohibits autocomplete, systematic queries, and complete POI downloads.
-
-```bash
-export OSM_NOMINATIM_URL="https://nominatim.openstreetmap.org"
+export OSM_NOMINATIM_URL="https://nominatim.example.org"
+export OSM_OVERPASS_URL="https://overpass.example.org/api/interpreter"
 export OSM_USER_AGENT="my-osm-client/1.0 (contact@example.com)"
 ```
 
-The CLI does not default to the public Nominatim service. This makes endpoint selection deliberate and lets operators switch providers without a software update.
-
-Optional Overpass configuration:
-
-```bash
-export OSM_OVERPASS_URL="https://overpass-api.de/api/interpreter"
-```
-
-The public Overpass endpoint is the default.
+Geocoding, reverse geocoding, and `nearby --near` use Nominatim. `nearby --at` uses Overpass only.
 
 ## Interface
 
