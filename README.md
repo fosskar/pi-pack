@@ -51,220 +51,46 @@ Home Manager can deploy one skill for another agent:
 
 ### Skills
 
-<details>
-<summary><strong>agents-md</strong></summary>
-
-- **Source:** [`skills/agents-md/`](skills/agents-md/)
-- **Use:** Bootstrap an `AGENTS.md` or check one for stale claims.
-
-</details>
-
-<details>
-<summary><strong>architecture-review</strong></summary>
-
-- **Source:** [`skills/architecture-review/`](skills/architecture-review/)
-- **Use:** Create a visual HTML report and explore a selected problem.
-
-</details>
-
-<details>
-<summary><strong>create-skills</strong></summary>
-
-- **Source:** [`skills/create-skills/`](skills/create-skills/)
-- **Use:** Apply the included rules and references when you write agent documents.
-
-</details>
-
-<details>
-<summary><strong>grilling</strong></summary>
-
-- **Source:** [`skills/grilling/`](skills/grilling/)
-- **Use:** Question the user until the plan or decision is clear.
-- **Credit:** Original skill by [Matt Pocock](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md).
-
-</details>
-
-<details>
-<summary><strong>handoff</strong></summary>
-
-- **Source:** [`skills/handoff/`](skills/handoff/)
-- **Use:** Compact the current conversation into a handoff document.
-
-</details>
-
-<details>
-<summary><strong>huh</strong></summary>
-
-- **Source:** [`skills/huh/`](skills/huh/)
-- **Use:** Give a clearer and simpler explanation of the last answer.
-
-</details>
-
-<details>
-<summary><strong>nixbot-check</strong></summary>
-
-- **Source:** [`skills/nixbot-check/`](skills/nixbot-check/)
-- **Use:** Find, classify, reproduce, and monitor nixbot failures.
-- **Requires:** `nbo` from the `nixbot-cli` package, and `NIXBOT_URL` for a self-hosted instance. pi-pack does not install it.
-
-</details>
-
-<details>
-<summary><strong>ops-review</strong></summary>
-
-- **Source:** [`skills/ops-review/`](skills/ops-review/)
-- **Use:** Create a visual HTML report and examine a selected risk.
-
-</details>
-
-<details>
-<summary><strong>osm</strong></summary>
-
-- **Source:** [`skills/osm/`](skills/osm/)
-- **Use:** Find places, nearby points of interest, and public transport stops with bounded normalized output.
-
-</details>
-
-<details>
-<summary><strong>paperless</strong></summary>
-
-- **Source:** [`skills/paperless/`](skills/paperless/)
-- **Use:** Search and read documents, receipts, invoices, and scans through a bounded read-only interface.
-- **Requires:** A paperless-ngx instance, `PAPERLESS_URL`, and `PAPERLESS_API_TOKEN`.
-
-</details>
-
-<details>
-<summary><strong>review-pong</strong></summary>
-
-- **Source:** [`skills/review-pong/`](skills/review-pong/)
-- **Use:** Ask a second model to challenge findings until the verdicts are stable.
-
-</details>
-
-<details>
-<summary><strong>teach</strong></summary>
-
-- **Source:** [`skills/teach/`](skills/teach/)
-- **Use:** Teach the user a skill or concept in the current workspace.
-
-</details>
+| skill                                              | use                                                                                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [agents-md](skills/agents-md/)                     | Bootstrap an `AGENTS.md` or check one for stale claims.                                                                                                                         |
+| [architecture-review](skills/architecture-review/) | Create a visual HTML report and explore a selected codebase architecture problem.                                                                                               |
+| [create-skills](skills/create-skills/)             | Apply the included rules and references when you write agent documents.                                                                                                         |
+| [grilling](skills/grilling/)                       | Question the user until the plan or decision is clear. Original skill by [Matt Pocock](https://github.com/mattpocock/skills/blob/main/skills/productivity/grilling/SKILL.md).   |
+| [handoff](skills/handoff/)                         | Compact the current conversation into a handoff document.                                                                                                                       |
+| [huh](skills/huh/)                                 | Give a clearer and simpler explanation of the last answer.                                                                                                                      |
+| [nixbot-check](skills/nixbot-check/)               | Find, classify, reproduce, and monitor nixbot failures. Requires `nbo` from the `nixbot-cli` package, and `NIXBOT_URL` for a self-hosted instance. pi-pack does not install it. |
+| [ops-review](skills/ops-review/)                   | Create a visual HTML report and examine a selected infrastructure risk.                                                                                                         |
+| [osm](skills/osm/)                                 | Find places, nearby points of interest, and public transport stops.                                                                                                             |
+| [paperless](skills/paperless/)                     | Search and read documents, receipts, invoices, and scans through a bounded read-only interface. Requires a paperless-ngx instance, `PAPERLESS_URL`, and `PAPERLESS_API_TOKEN`.  |
+| [review-pong](skills/review-pong/)                 | Ask a second model to challenge review findings until the verdicts are stable.                                                                                                  |
+| [teach](skills/teach/)                             | Teach the user a skill or concept in the current workspace.                                                                                                                     |
 
 ### Prompts
 
-<details>
-<summary><strong>commit</strong></summary>
-
-- **Source:** [`prompts/commit.md`](prompts/commit.md)
-- **Use:** Split the current work into atomic commits with jj. It does not move bookmarks and does not push.
-- **Commands:** `/commit`
-
-</details>
-
-<details>
-<summary><strong>publish</strong></summary>
-
-- **Source:** [`prompts/publish.md`](prompts/publish.md)
-- **Use:** Rebase on `origin` and push `main` to a remote.
-- **Commands:** `/publish [remote]`
-
-</details>
+| prompt                        | commands            | use                                                                                               |
+| ----------------------------- | ------------------- | ------------------------------------------------------------------------------------------------- |
+| [commit](prompts/commit.md)   | `/commit`           | Split the current work into atomic commits with jj. It does not move bookmarks and does not push. |
+| [publish](prompts/publish.md) | `/publish [remote]` | Rebase on `origin` and push `main` to a remote.                                                   |
 
 ### Themes
 
-<details>
-<summary><strong>grey-amber.json</strong></summary>
-
-- **Source:** [`themes/grey-amber.json`](themes/grey-amber.json)
-- **Use:** A dark grey theme with amber accents. Set `"theme": "grey-amber"` in `settings.json`.
-
-</details>
-
-<details>
-<summary><strong>grey-teal.json</strong></summary>
-
-- **Source:** [`themes/grey-teal.json`](themes/grey-teal.json)
-- **Use:** A dark grey theme with teal accents. Set `"theme": "grey-teal"` in `settings.json`.
-
-</details>
+| theme                                | use                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------- |
+| [grey-amber](themes/grey-amber.json) | A dark grey theme with amber accents. Set `"theme": "grey-amber"` in `settings.json`. |
+| [grey-teal](themes/grey-teal.json)   | A dark grey theme with teal accents. Set `"theme": "grey-teal"` in `settings.json`.   |
 
 ### Extensions
 
-<details>
-<summary><strong>btw</strong></summary>
-
-- **Source:** [`extensions/btw/`](extensions/btw/)
-- **Use:** Ask side questions without adding each turn to the main conversation.
-- **Commands:** `/btw`, `/btw:tangent`, `/btw:new`, `/btw:clear`, `/btw:inject`, `/btw:summarize`, `/btw:model`, and `/btw:thinking`
-
-</details>
-
-<details>
-<summary><strong>clipboard</strong></summary>
-
-- **Source:** [`extensions/clipboard/`](extensions/clipboard/)
-- **Use:** Copy generated text through OSC52.
-- **Requires:** A terminal that accepts OSC52 clipboard writes.
-
-</details>
-
-<details>
-<summary><strong>llm-wiki</strong></summary>
-
-- **Source:** [`extensions/llm-wiki/`](extensions/llm-wiki/)
-- **Use:** Safely operate an existing Git-backed wiki without GitHub APIs.
-- **Commands:** `/wiki-capture`, `/wiki-query`, `/wiki-observe`, `/wiki-lint`, and `/wiki-status`
-- **Requires:** `git` in `PATH`, and a Git repository named `llm-wiki`. pi-pack does not create it.
-
-The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document baseline. It requires a Git repository named `llm-wiki` with top-level `raw/` and `wiki/` directories. `SPEC.md`, `AGENTS.md`, and other supported schema files are optional. The extension reports each available schema file for the agent to read before semantic work.
-
-The extension searches the working directory and its parents for the repository. [`extensions/llm-wiki/README.md`](extensions/llm-wiki/README.md) describes discovery and the `LLM_WIKI_PATH`, `LLM_WIKI_BRANCH`, and `LLM_WIKI_REMOTE` overrides.
-
-</details>
-
-<details>
-<summary><strong>sediment-memory</strong></summary>
-
-- **Source:** [`extensions/sediment-memory/`](extensions/sediment-memory/)
-- **Use:** Keep durable facts across sessions and recall them later.
-- **Commands:** `/memory`
-- **Requires:** `sediment` in `PATH`. Home Manager installs it. Other Nix setups install it separately.
-
-```bash
-nix profile install github:fosskar/pi-pack#sediment
-```
-
-[`extensions/sediment-memory/README.md`](extensions/sediment-memory/README.md) describes the `SEDIMENT_BIN` and `SEDIMENT_DB` overrides and the database location.
-
-</details>
-
-<details>
-<summary><strong>oracle</strong></summary>
-
-- **Source:** [`extensions/oracle/`](extensions/oracle/)
-- **Use:** Ask a second model to review, critique, or challenge a conclusion.
-- **Commands:** `/oracle`
-- **Requires:** A second configured model provider.
-
-</details>
-
-<details>
-<summary><strong>pi-to-PI</strong></summary>
-
-- **Source:** [`extensions/pi-to-PI/`](extensions/pi-to-PI/)
-- **Use:** Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.
-
-</details>
-
-<details>
-<summary><strong>sketch</strong></summary>
-
-- **Source:** [`extensions/sketch/`](extensions/sketch/)
-- **Use:** Open a browser sketch pad and send the result as image input.
-- **Commands:** `/sketch`
-- **Requires:** A browser on the machine that runs Pi.
-
-</details>
+| extension                                      | commands                                                                      | use                                                                                                                                                                                            |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [btw](extensions/btw/)                         | `/btw` and seven subcommands                                                  | Ask side questions without adding each turn to the main conversation.                                                                                                                          |
+| [clipboard](extensions/clipboard/)             |                                                                               | Copy generated text through OSC52. Requires a terminal that accepts OSC52 clipboard writes.                                                                                                    |
+| [llm-wiki](extensions/llm-wiki/)               | `/wiki-capture`, `/wiki-query`, `/wiki-observe`, `/wiki-lint`, `/wiki-status` | Safely operate an existing Git-backed wiki without GitHub APIs. Requires `git` in `PATH` and a Git repository named `llm-wiki`. pi-pack does not create it.                                    |
+| [oracle](extensions/oracle/)                   | `/oracle`                                                                     | Ask a second model to review, critique, or challenge a conclusion. Requires a second configured model provider.                                                                                |
+| [pi-to-PI](extensions/pi-to-PI/)               |                                                                               | Rewrite standalone `pi` to `PI` in the system prompt for Anthropic models.                                                                                                                     |
+| [sediment-memory](extensions/sediment-memory/) | `/memory`                                                                     | Keep durable facts across sessions and recall them later. Requires `sediment` in `PATH`; Home Manager installs it, other Nix setups run `nix profile install github:fosskar/pi-pack#sediment`. |
+| [sketch](extensions/sketch/)                   | `/sketch`                                                                     | Open a browser sketch pad and send the result as image input. Requires a browser on the machine that runs Pi.                                                                                  |
 
 ## Develop
 
