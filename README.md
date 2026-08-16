@@ -266,31 +266,19 @@ nix profile install github:fosskar/pi-pack#sediment
 
 </details>
 
-## Nix outputs
+## Develop
 
 ```bash
-nix build .#
-nix fmt
-nix flake check
+nix build .#     # packaged resources under share/pi-pack/
+nix fmt          # nixfmt, Prettier, deadnix, statix
+nix flake check  # builds, module evaluation, formatting, extension tests
 ```
 
-outputs:
-
-- `packages.<system>.default` — packaged pi assets under `share/pi-pack/`
-- `packages.<system>.sediment` — patched Sediment package for `sediment-memory`
-- `packages.<system>.osm-cli` — OpenStreetMap CLI for the `osm` skill
-- `packages.<system>.paperless-cli` — read-only Paperless-ngx CLI for the `paperless` skill
-- `checks.<system>.extension-tests` — mocked extension load and unit tests
-- `checks.<system>.pi-compatibility` — real extension load with Pi from `llm-agents.nix`
-- `homeModules.default` — Home Manager resource and Sediment deployment
-- `formatter.<system>` — treefmt wrapper
-- `lib.skills`, `lib.prompts`, `lib.extensions`, `lib.themes` — discovered asset names
+Run `nix flake show` for the full output list.
 
 ## Security
 
 extensions execute code in the agent process. review them before installing from git.
-
-`llm-wiki` commits and pushes successful mutation operations. It stops on dirty state, divergence, stale content, validation errors, locks, and push rejection.
 
 skills can instruct an agent to run commands. review them before enabling in unattended services.
 
