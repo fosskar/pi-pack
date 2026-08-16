@@ -9,7 +9,7 @@ pi-pack distributes Pi extensions, skills, prompt templates, and themes. Nix pac
 - `extensions/<name>/index.ts`: TypeScript extension entry points.
 - `extensions/<name>/README.md`: extension interface, configuration, lifecycle, and safety notes.
 - `extensions/<name>/test/<name>.test.ts`: colocated extension tests.
-- `skills/<name>/SKILL.md`: skill frontmatter and instructions. Keep referenced support files in the same skill directory.
+- `skills/<name>/SKILL.md`: skill frontmatter and instructions. Keep referenced support files and skill-owned CLIs in the same skill directory.
 - `prompts/*.md`: prompt templates. The filename becomes the slash command.
 - `themes/*.json`: complete Pi theme definitions.
 - `flake.nix`: resource discovery, package outputs, checks, and formatter configuration.
@@ -89,5 +89,7 @@ Run `nix fmt` after Nix, TypeScript, Markdown, or JSON changes. The formatter us
 Extensions run in the Pi process with user permissions. Skills can direct an agent to execute commands. Do not weaken the security notes in `README.md`.
 
 `sediment-memory` requires `sediment` in `PATH`. The Home Manager selection must install or remove both together.
+
+The `osm` skill requires `osm` in `PATH`. The Home Manager selection must install or remove `osm-cli` with the skill.
 
 The checks support `x86_64-linux`, `aarch64-linux`, and `aarch64-darwin`.

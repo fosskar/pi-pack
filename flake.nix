@@ -69,9 +69,10 @@
         };
 
       sedimentPackage = pkgs: pkgs.callPackage ./nix/packages/sediment/package.nix { };
+      osmCliPackage = pkgs: pkgs.callPackage ./skills/osm { };
 
       homeConfiguration =
-        pkgs: selectedExtensions:
+        pkgs: selectedExtensions: selectedSkills:
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [
@@ -87,6 +88,7 @@
                 programs.pi-pack = {
                   enable = true;
                   extensions = selectedExtensions;
+                  skills = selectedSkills;
                 };
                 assertions = [
                   {
@@ -99,6 +101,12 @@
                       builtins.elem "sediment-memory" selectedExtensions
                       == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.sediment config.home.packages;
                     message = "Sediment installation must follow sediment-memory selection";
+                  }
+                  {
+                    assertion =
+                      builtins.elem "osm" selectedSkills
+                      == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.osm-cli config.home.packages;
+                    message = "osm-cli installation must follow osm skill selection";
                   }
                 ];
               }
@@ -132,18 +140,24 @@
     {
       packages = eachSystem (pkgs: {
         default = package pkgs;
+        osm-cli = osmCliPackage pkgs;
         sediment = sedimentPackage pkgs;
       });
 
       checks = eachSystem (pkgs: {
         package = package pkgs;
+        osm-cli = osmCliPackage pkgs;
         sediment = sedimentPackage pkgs;
-        home-manager = (homeConfiguration pkgs extensions).activationPackage;
+        home-manager = (homeConfiguration pkgs extensions skills).activationPackage;
         home-manager-no-memory =
-          (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory") extensions))
+          (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory") extensions) skills)
           .activationPackage;
         home-manager-no-wiki =
-          (homeConfiguration pkgs (builtins.filter (name: name != "llm-wiki") extensions)).activationPackage;
+          (homeConfiguration pkgs (builtins.filter (name: name != "llm-wiki") extensions) skills)
+          .activationPackage;
+        home-manager-no-osm =
+          (homeConfiguration pkgs extensions (builtins.filter (name: name != "osm") skills))
+          .activationPackage;
         extension-tests =
           pkgs.runCommand "pi-pack-extension-tests"
             {

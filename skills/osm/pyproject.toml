@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pi-pack-osm-cli"
+version = "0.1.0"
+description = "Bounded OpenStreetMap place search for AI agents"
+requires-python = ">=3.11"
+
+[project.scripts]
+osm = "osm_cli.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["osm_cli*"]

@@ -26,7 +26,7 @@ let
   resourcePackages = {
     extensions.llm-wiki = [ pkgs.git ];
     extensions.sediment-memory = [ cfg.package.sediment ];
-    skills = { };
+    skills.osm = [ cfg.package.osm-cli ];
   };
 in
 {
