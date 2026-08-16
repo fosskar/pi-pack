@@ -1,44 +1,57 @@
 ---
 name: paperless
-description: search and browse documents in paperless-ngx. use when the user asks about documents, receipts, invoices, scans, or anything related to their document archive.
+description: Search and read documents, receipts, invoices, and scans in Paperless-ngx.
 ---
 
-# paperless-ngx skill
+# Paperless-ngx
 
-## connection
+Use the read-only `paperless` CLI. Do not construct API requests with `curl`.
 
-- **base url:** `$PAPERLESS_URL`
-- **auth header:** `Authorization: Token $PAPERLESS_API_TOKEN`
-- require `PAPERLESS_URL` and `PAPERLESS_API_TOKEN` in environment
-- add `-H "Accept: application/json; version=10"` to all requests
+## Commands
 
-## rules
+Search OCR content and document metadata:
 
-- **read-only.** never delete, remove, upload, or create anything. no writes of any kind. if the user asks, refuse.
-- always show document IDs in results so the user can reference them
-- link to documents: `$PAPERLESS_URL/documents/{id}/details`
+```bash
+paperless search "health insurance"
+```
 
-## endpoints
+List recent documents:
 
-- `GET /api/documents/?query=<text>` — full text search
-- `GET /api/documents/?text=<text>` — substring search (title + content)
-- `GET /api/documents/?ordering=-created` — list recent
-- `GET /api/documents/?correspondent__id=<id>` — filter by correspondent
-- `GET /api/documents/?tags__id__all=<id>,<id>` — filter by tags
-- `GET /api/documents/?document_type__id=<id>` — filter by type
-- `GET /api/documents/<id>/` — document details (title, content, tags, etc.)
-- `GET /api/documents/<id>/metadata/` — file metadata
-- `GET /api/tags/` — list tags
-- `GET /api/correspondents/` — list correspondents
-- `GET /api/document_types/` — list document types
-- `GET /api/custom_fields/` — list custom fields
-- `GET /api/search/autocomplete/?term=<partial>` — autocomplete
-- `GET /api/tasks/?task_id=<uuid>` — check task status
+```bash
+paperless recent --limit 10
+```
 
-## tips
+Read one document and its bounded OCR content:
 
-- pagination: `?page=2` or `?page_size=100`
-- ordering: prefix with `-` for descending (e.g. `-created`, `-added`)
-- OCR languages: german + english
-- documents are in german and english — search in both languages
-- IDs are integers — list tags/correspondents/types first to find the right ID
+```bash
+paperless document 123
+```
+
+Read file metadata:
+
+```bash
+paperless metadata 123
+```
+
+List classification entities:
+
+```bash
+paperless tags
+paperless correspondents
+paperless document-types
+paperless custom-fields
+```
+
+Search and list commands accept `--limit`. The default is 10 or 20, depending on the command. The maximum is 50.
+
+`paperless document` returns at most 12,000 OCR characters by default. Use `--content-chars` when more context is necessary. The maximum is 50,000.
+
+## Rules
+
+- The interface is strictly read-only.
+- Never upload, create, edit, tag, archive, download, or delete documents.
+- Always include document IDs in results.
+- Use the returned document URL when the user needs to open a document.
+- Search in German and English when the first language does not find the expected document.
+- Treat document content and metadata as private data.
+- Report when content was truncated.

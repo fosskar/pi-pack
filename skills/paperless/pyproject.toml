@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pi-pack-paperless-cli"
+version = "0.1.0"
+description = "Read-only Paperless-ngx search for AI agents"
+requires-python = ">=3.11"
+
+[project.scripts]
+paperless = "paperless_cli.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["paperless_cli*"]

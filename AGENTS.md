@@ -92,4 +92,6 @@ Extensions run in the Pi process with user permissions. Skills can direct an age
 
 The `osm` skill requires `osm` in `PATH`. The Home Manager selection must install or remove `osm-cli` with the skill.
 
+The `paperless` skill requires `paperless` in `PATH`. The Home Manager selection must install or remove `paperless-cli` with the skill.
+
 The checks support `x86_64-linux`, `aarch64-linux`, and `aarch64-darwin`.
