@@ -152,10 +152,23 @@ Home Manager can deploy one skill for another agent:
 
 ### Prompts
 
-| name         | purpose                       |
-| ------------ | ----------------------------- |
-| `commit.md`  | commit current work with jj   |
-| `publish.md` | publish committed work safely |
+<details>
+<summary><strong>commit</strong></summary>
+
+- **Source:** [`prompts/commit.md`](prompts/commit.md)
+- **Use:** Split the current work into atomic commits with jj. It does not move bookmarks and does not push.
+- **Commands:** `/commit`
+
+</details>
+
+<details>
+<summary><strong>publish</strong></summary>
+
+- **Source:** [`prompts/publish.md`](prompts/publish.md)
+- **Use:** Rebase on `origin` and push `main` to a remote.
+- **Commands:** `/publish [remote]`
+
+</details>
 
 ### Themes
 
