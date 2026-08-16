@@ -35,19 +35,7 @@ pi install git:github.com/fosskar/pi-pack
 
 Pi records the package in `~/.pi/agent/settings.json`. Use `pi config` to enable or disable individual resources.
 
-The `llm-wiki` extension requires Git in `PATH`. It searches the working directory and its parents for a Git repository named `llm-wiki` with `raw/` and `wiki/`. Use these optional overrides when automatic discovery is not sufficient:
-
-```bash
-export LLM_WIKI_PATH="$HOME/Projects/llm-wiki"
-export LLM_WIKI_REMOTE="git@github.com:owner/llm-wiki.git" # create or verify the clone
-export LLM_WIKI_BRANCH="main"                              # default: main
-```
-
-The `sediment-memory` extension also requires Sediment in `PATH`. Nix users without Home Manager can install it separately:
-
-```bash
-nix profile install github:fosskar/pi-pack#sediment
-```
+The `llm-wiki` and `sediment-memory` extensions need extra CLI tools. See their entries under [Extensions](#extensions).
 
 ### Use one skill from Nix
 
@@ -221,6 +209,8 @@ Home Manager can deploy one skill for another agent:
 
 The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document baseline. It requires a Git repository named `llm-wiki` with top-level `raw/` and `wiki/` directories. `SPEC.md`, `AGENTS.md`, and other supported schema files are optional. The extension reports each available schema file for the agent to read before semantic work.
 
+The extension searches the working directory and its parents for the repository. [`extensions/llm-wiki/README.md`](extensions/llm-wiki/README.md) describes discovery and the `LLM_WIKI_PATH`, `LLM_WIKI_BRANCH`, and `LLM_WIKI_REMOTE` overrides.
+
 </details>
 
 <details>
@@ -231,6 +221,14 @@ The extension embeds the Karpathy LLM Wiki pattern and the OKF v0.2 document bas
 - **Tool:** `memory_search`
 - **Requirement:** `sediment` in `PATH`
 - **Nix package:** `packages.<system>.sediment`
+
+Nix users without Home Manager can install Sediment separately:
+
+```bash
+nix profile install github:fosskar/pi-pack#sediment
+```
+
+[`extensions/sediment-memory/README.md`](extensions/sediment-memory/README.md) describes the `SEDIMENT_BIN` and `SEDIMENT_DB` overrides and the database location.
 
 </details>
 
