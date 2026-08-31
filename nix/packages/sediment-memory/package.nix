@@ -9,6 +9,6 @@
 runCommand "pi-pack-sediment-memory" { src = ../../../extensions/sediment-memory; } ''
   cp -r $src $out
   chmod -R u+w $out
-  substituteInPlace $out/index.ts \
+  substituteInPlace $out/sediment.ts \
     --replace-fail '@SEDIMENT_BIN@' '${sediment}/bin/sediment'
 ''
