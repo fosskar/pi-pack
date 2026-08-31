@@ -5,7 +5,13 @@ import type {
 import { Type } from "typebox";
 import { rm, writeFile } from "node:fs/promises";
 
-import { KINDS, type Fact, type Kind } from "./evidence.ts";
+import {
+  KINDS,
+  SCOPES,
+  type Fact,
+  type Kind,
+  type MemoryScope,
+} from "./evidence.ts";
 import { renderMemorySearchResults, sedimentStore } from "./sediment.ts";
 
 const SEARCH_LIMIT_MAX = 50;
@@ -93,7 +99,12 @@ export function registerMemoryInterface(
           1,
           Math.min(SEARCH_LIMIT_MAX, Math.trunc(params.limit ?? 5)),
         );
-        const results = await sedimentStore.search(params.query, limit, signal);
+        const results = await sedimentStore.search(
+          params.query,
+          limit,
+          signal,
+          ctx.sessionManager.getCwd(),
+        );
         if (results.length === 0) {
           return {
             content: [{ type: "text" as const, text: "No memories found." }],
@@ -130,8 +141,10 @@ export function registerMemoryInterface(
     promptGuidelines: [
       "Store a memory when the user asks to remember, note, or not " +
         "forget something (\u201cremember that\u2026\u201d, \u201cdon't forget\u2026\u201d), and when a " +
-        "stated fact corrects an existing memory. Do not store transient " +
-        "task state or secrets.",
+        "stated fact corrects an existing memory. Use project scope for " +
+        "repository-specific information and global only for information " +
+        "clearly useful across projects. Do not store transient task state " +
+        "or secrets.",
     ],
     parameters: Type.Object({
       kind: Type.String({
@@ -140,6 +153,14 @@ export function registerMemoryInterface(
           "pref (preference or convention), id (exact identifier, URL, or " +
           "handle), howto (working one-line command), todo (open task)",
       }),
+      scope: Type.Optional(
+        Type.String({
+          description:
+            "project for repository-specific information (default); global " +
+            "only for information clearly useful across projects",
+          default: "project",
+        }),
+      ),
       subject: Type.String({
         description:
           "Stable lowercase key of 2-6 words; a later store with the same " +
@@ -153,7 +174,12 @@ export function registerMemoryInterface(
     }),
     async execute(
       _toolCallId,
-      params: { kind: string; subject: string; body: string },
+      params: {
+        kind: string;
+        scope?: string;
+        subject: string;
+        body: string;
+      },
       _signal,
       _onUpdate,
       ctx,
@@ -171,8 +197,23 @@ export function registerMemoryInterface(
           details: { error: "invalid kind" },
         };
       }
+      const scope = (params.scope ?? "project")
+        .trim()
+        .toLowerCase() as MemoryScope;
+      if (!(SCOPES as readonly string[]).includes(scope)) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Invalid scope "${params.scope}". Use one of: ${SCOPES.join(", ")}.`,
+            },
+          ],
+          details: { error: "invalid scope" },
+        };
+      }
       const fact: Fact = {
         kind,
+        scope,
         subject: params.subject.trim().toLowerCase(),
         body: params.body.trim(),
       };
@@ -204,7 +245,7 @@ export function registerMemoryInterface(
         };
       }
       try {
-        await sedimentStore.storeFacts([fact]);
+        await sedimentStore.storeFacts([fact], ctx.sessionManager.getCwd());
         return {
           content: [
             {
@@ -237,8 +278,9 @@ export function registerMemoryInterface(
       "Curate memory actively: when a recalled or searched item is " +
         "contradicted by newer information, duplicated, or clearly " +
         "outdated, delete it with the id from memory_search results " +
-        "\u2014 no need to ask. When a correction replaces it, store the " +
-        "corrected item too.",
+        "\u2014 no need to ask. Cross-project items are read-only from the " +
+        "current project. When a correction replaces an editable item, " +
+        "store the corrected item too.",
     ],
     parameters: Type.Object({
       id: Type.String({ description: "Item id from memory_search results" }),
@@ -259,7 +301,7 @@ export function registerMemoryInterface(
         };
       }
       try {
-        await sedimentStore.forget(id);
+        await sedimentStore.forget(id, ctx.sessionManager.getCwd());
         return {
           content: [{ type: "text" as const, text: `Forgot memory ${id}.` }],
           details: { id },

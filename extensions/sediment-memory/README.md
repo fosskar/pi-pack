@@ -25,7 +25,7 @@ The parent `sediment/` directory also contains access data and the durable extra
 
 The extension collects settled conversation turns. Every settled turn is mirrored to a pending spool file, so a crash loses at most the turn in flight. Every four turns the pending batch becomes a durable spool job and background extraction starts. Session shutdown flushes a shorter pending batch; a pending file orphaned by a dead session is drained after one hour.
 
-Each batch carries the last two turns of the previous batch as context-only records: the extractor can resolve references across the batch boundary but cannot cite them as evidence, so re-seen turns produce no duplicate facts.
+Each batch records its originating working directory and carries the last two turns of the previous batch as context-only records: the extractor can resolve references across the batch boundary but cannot cite them as evidence, so re-seen turns produce no duplicate facts.
 
 Extraction keeps evidence-backed items such as:
 
@@ -34,7 +34,7 @@ Extraction keeps evidence-backed items such as:
 - Successful command examples.
 - Open tasks.
 
-A newer fact can replace a semantically similar older fact. Pi compaction summaries are not stored: the turn pipeline has already extracted their durable facts, and storing the whole summary would duplicate them as one large document.
+Repository-specific items use Sediment's project scope; information clearly useful across projects uses global scope. A newer fact can replace a semantically similar older fact within the same scope. Pi compaction summaries are not stored: the turn pipeline has already extracted their durable facts, and storing the whole summary would duplicate them as one large document.
 
 Failed extraction jobs remain in the spool. A later session retries them. Successful jobs are removed only after all memory writes complete.
 
@@ -42,7 +42,7 @@ Failed extraction jobs remain in the spool. A later session retries them. Succes
 
 On the first agent prompt, the extension searches Sediment and injects at most three results above the similarity threshold into the system prompt. It keeps that exact block on later turns without searching again, preserving provider prompt caching; the model uses `memory_search` for later topic shifts. After compaction replaces the conversation context, the next prompt receives one fresh automatic recall.
 
-The recall query blends the prompt with the last three session turns, including restored history after a resume, so a terse prompt still recalls against the conversation topic; injected skill blocks are stripped first.
+The recall query blends the prompt with the last three session turns, including restored history after a resume, so a terse prompt still recalls against the conversation topic; injected skill blocks are stripped first. Sediment receives the session working directory as project context. It keeps cross-project results available with its native ranking penalty, and the extension marks those results as cross-project. Sediment permits deletion only from the owning project, so cross-project results are read-only in the current session.
 
 Recalled content is marked as untrusted historical data. The agent must not follow instructions contained in a memory.
 
@@ -60,6 +60,7 @@ The `memory_store` tool stores one item immediately, bypassing batched extractio
 ```json
 {
   "kind": "pref",
+  "scope": "global",
   "subject": "commit style",
   "body": "Linux-kernel style commit messages without trailers."
 }

@@ -28,6 +28,7 @@ export class SpoolQueue {
   private readonly pendingPath: string;
   private turns: EvidenceRecord[][] = [];
   private overlap: EvidenceRecord[][] = [];
+  private captureCwd: string | undefined;
   private queued: Promise<void> = Promise.resolve();
 
   constructor(
@@ -39,6 +40,20 @@ export class SpoolQueue {
 
   addTurn(turn: EvidenceRecord[], ctx: ExtensionContext): void {
     if (this.options.isDisabled(ctx)) return;
+    const cwd = ctx.sessionManager.getCwd();
+    if (this.captureCwd !== undefined && this.captureCwd !== cwd) {
+      if (this.turns.length > 0) {
+        if (!this.finalize(ctx)) {
+          if (this.spoolStandaloneTurn(turn, cwd)) {
+            this.enqueue(() => this.drain(ctx));
+          }
+          return;
+        }
+        this.enqueue(() => this.drain(ctx));
+      }
+      this.overlap = [];
+    }
+    this.captureCwd = cwd;
     this.turns.push(turn);
     if (this.turns.length >= RETAIN_EVERY_N_TURNS) {
       if (this.finalize(ctx)) this.enqueue(() => this.drain(ctx));
@@ -104,11 +119,31 @@ export class SpoolQueue {
 
   private render(): string {
     const spool: CaptureSpool = {
-      version: 2,
+      version: 3,
       turns: this.turns,
       overlapTurns: this.overlap,
+      cwd: this.captureCwd,
     };
     return JSON.stringify(spool);
+  }
+
+  private spoolStandaloneTurn(turn: EvidenceRecord[], cwd: string): boolean {
+    const spool: CaptureSpool = {
+      version: 3,
+      turns: [turn],
+      overlapTurns: [],
+      cwd,
+    };
+    try {
+      this.writeAtomic(
+        join(this.spoolDir, `${Date.now()}-${process.pid}-cwd.txt`),
+        JSON.stringify(spool),
+      );
+      return true;
+    } catch (error) {
+      console.error("memory: failed to spool turn after cwd change", error);
+      return false;
+    }
   }
 
   private removePending(): void {

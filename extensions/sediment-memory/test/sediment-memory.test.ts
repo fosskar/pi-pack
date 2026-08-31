@@ -80,56 +80,77 @@ function testProvenanceGate(): void {
 
   assert.deepEqual(
     parseEvidenceFactLines(
-      `pref | package manager | User prefers pnpm. | evidence=${id("user")}`,
+      `pref | global | package manager | User prefers pnpm. | evidence=${id("user")}`,
       sources,
     ),
-    [{ kind: "pref", subject: "package manager", body: "User prefers pnpm." }],
+    [
+      {
+        kind: "pref",
+        scope: "global",
+        subject: "package manager",
+        body: "User prefers pnpm.",
+      },
+    ],
   );
   assert.deepEqual(
     parseEvidenceFactLines(
-      `fact | package manager | User requires npm. | evidence=${id("assistant")}`,
-      sources,
-    ),
-    [],
-  );
-  assert.deepEqual(
-    parseEvidenceFactLines(
-      `fact | shell syntax | Uses a | ${id("user")}`,
-      sources,
-    ),
-    [],
-  );
-  assert.deepEqual(
-    parseEvidenceFactLines(
-      `fact | package manager | Use yarn. | evidence=${id("context")}`,
+      `fact | project | package manager | User requires npm. | evidence=${id("assistant")}`,
       sources,
     ),
     [],
   );
   assert.deepEqual(
     parseEvidenceFactLines(
-      `id | workflow id | abc-123 | evidence=${id("user")}`,
-      sources,
-    ),
-    [{ kind: "id", subject: "workflow id", body: "abc-123" }],
-  );
-  assert.deepEqual(
-    parseEvidenceFactLines(
-      `id | workflow id | invented | evidence=${id("user")}`,
+      `fact | project | shell syntax | Uses a | ${id("user")}`,
       sources,
     ),
     [],
   );
   assert.deepEqual(
     parseEvidenceFactLines(
-      `howto | json pipeline | printf x | jq . | evidence=${id("command")}`,
+      `fact | project | package manager | Use yarn. | evidence=${id("context")}`,
       sources,
     ),
-    [{ kind: "howto", subject: "json pipeline", body: "printf x | jq ." }],
+    [],
   );
   assert.deepEqual(
     parseEvidenceFactLines(
-      `howto | failed command | false | evidence=${id("command", 1)}`,
+      `id | project | workflow id | abc-123 | evidence=${id("user")}`,
+      sources,
+    ),
+    [
+      {
+        kind: "id",
+        scope: "project",
+        subject: "workflow id",
+        body: "abc-123",
+      },
+    ],
+  );
+  assert.deepEqual(
+    parseEvidenceFactLines(
+      `id | project | workflow id | invented | evidence=${id("user")}`,
+      sources,
+    ),
+    [],
+  );
+  assert.deepEqual(
+    parseEvidenceFactLines(
+      `howto | project | json pipeline | printf x | jq . | evidence=${id("command")}`,
+      sources,
+    ),
+    [
+      {
+        kind: "howto",
+        scope: "project",
+        subject: "json pipeline",
+        body: "printf x | jq .",
+      },
+    ],
+  );
+  assert.deepEqual(
+    parseEvidenceFactLines(
+      `howto | project | failed command | false | evidence=${id("command", 1)}`,
       sources,
     ),
     [],
@@ -139,11 +160,26 @@ function testProvenanceGate(): void {
 function testSpoolCompatibility(): void {
   const legacy = prepareSpoolExtraction("[User]: Remember pnpm.");
   assert.deepEqual(legacy.parse("pref | package manager | Use pnpm."), [
-    { kind: "pref", subject: "package manager", body: "Use pnpm." },
+    {
+      kind: "pref",
+      scope: "global",
+      subject: "package manager",
+      body: "Use pnpm.",
+    },
   ]);
 
   assert.throws(
     () => prepareSpoolExtraction('{"version":2,"turns":['),
+    /invalid structured memory spool/,
+  );
+  assert.throws(
+    () =>
+      prepareSpoolExtraction(
+        JSON.stringify({
+          version: 3,
+          turns: [[{ type: "user", text: "Use pnpm." }]],
+        }),
+      ),
     /invalid structured memory spool/,
   );
 
@@ -155,8 +191,35 @@ function testSpoolCompatibility(): void {
   );
   assert.match(current.input, /^u1 \| user \|/);
   assert.deepEqual(
-    current.parse("pref | package manager | Use pnpm. | evidence=u1"),
-    [{ kind: "pref", subject: "package manager", body: "Use pnpm." }],
+    current.parse("pref | project | package manager | Use pnpm. | evidence=u1"),
+    [
+      {
+        kind: "pref",
+        scope: "global",
+        subject: "package manager",
+        body: "Use pnpm.",
+      },
+    ],
+  );
+
+  const scoped = prepareSpoolExtraction(
+    JSON.stringify({
+      version: 3,
+      cwd: "/tmp/project",
+      turns: [[{ type: "user", text: "Use pnpm." }]],
+    }),
+  );
+  assert.equal(scoped.cwd, "/tmp/project");
+  assert.deepEqual(
+    scoped.parse("pref | project | package manager | Use pnpm. | evidence=u1"),
+    [
+      {
+        kind: "pref",
+        scope: "project",
+        subject: "package manager",
+        body: "Use pnpm.",
+      },
+    ],
   );
 
   const overlap = prepareSpoolExtraction(
@@ -177,20 +240,23 @@ function testSpoolCompatibility(): void {
   assert.match(overlap.input, /u1 \| user \| "Do that for gateway too\."/);
   // context records are rejected as evidence for every kind
   assert.deepEqual(
-    overlap.parse("fact | gatus rollout | Enable gatus. | evidence=x1"),
+    overlap.parse(
+      "fact | project | gatus rollout | Enable gatus. | evidence=x1",
+    ),
     [],
   );
   assert.deepEqual(
-    overlap.parse("howto | build x | nix build .#x | evidence=x2"),
+    overlap.parse("howto | project | build x | nix build .#x | evidence=x2"),
     [],
   );
   assert.deepEqual(
     overlap.parse(
-      "todo | gatus on gateway | Enable gatus on gateway. | evidence=u1",
+      "todo | project | gatus on gateway | Enable gatus on gateway. | evidence=u1",
     ),
     [
       {
         kind: "todo",
+        scope: "global",
         subject: "gatus on gateway",
         body: "Enable gatus on gateway.",
       },
@@ -271,6 +337,11 @@ function testSearchRendering(): void {
   assert.match(normal, /Use pnpm\./);
   assert.match(normal, /\[id=memory-1 similarity=0\.75\]/);
 
+  const crossProject = renderMemorySearchResults([
+    { ...result("Use pnpm."), cross_project: true },
+  ]);
+  assert.match(crossProject, /cross_project=true/);
+
   const large = renderMemorySearchResults([result("x".repeat(20_000))]);
   assert.ok(large.length <= 8_000);
   assert.match(large, /Memory results truncated/);
@@ -284,9 +355,11 @@ async function testRecallLifecycleAndToolBounds(): Promise<void> {
   assert.ok(beforeAgentStart);
   assert.ok(sessionCompact);
 
+  let currentCwd = "/tmp/project";
   const ctx = {
     sessionManager: {
       getSessionDir: () => undefined,
+      getCwd: () => currentCwd,
       getBranch: () => [
         {
           type: "message",
@@ -311,12 +384,14 @@ async function testRecallLifecycleAndToolBounds(): Promise<void> {
   const originalSearch = sedimentStore.search;
   const originalStoreFacts = sedimentStore.storeFacts;
   const queries: string[] = [];
+  const searchCwds: string[] = [];
   let failNext = false;
   let searchedLimit: number | undefined;
   let storeCalls = 0;
 
-  sedimentStore.search = async (query, limit) => {
+  sedimentStore.search = async (query, limit, _signal, cwd) => {
     queries.push(query);
+    searchCwds.push(cwd ?? "/");
     searchedLimit = limit;
     if (failNext) {
       failNext = false;
@@ -328,6 +403,7 @@ async function testRecallLifecycleAndToolBounds(): Promise<void> {
         content: "[pref] monitoring tool: Use gatus.",
         similarity: "0.8",
         raw_similarity: "0.8",
+        cross_project: true,
       },
     ];
   };
@@ -342,13 +418,23 @@ async function testRecallLifecycleAndToolBounds(): Promise<void> {
     assert.equal(queries.length, 1);
     assert.equal(first.systemPrompt, second.systemPrompt);
     assert.match(first.systemPrompt, /<recalled_memories>/);
+    assert.match(first.systemPrompt, /cross_project=true/);
+
+    currentCwd = "/tmp/other-project";
+    const afterCwdChange = await beforeAgentStart(event, ctx);
+    assert.match(afterCwdChange.systemPrompt, /<recalled_memories>/);
+    assert.equal(queries.length, 2);
+    assert.deepEqual(searchCwds.slice(0, 2), [
+      "/tmp/project",
+      "/tmp/other-project",
+    ]);
 
     await sessionCompact({}, ctx);
     failNext = true;
     assert.equal(await beforeAgentStart(event, ctx), undefined);
     const retried = await beforeAgentStart(event, ctx);
     assert.match(retried.systemPrompt, /<recalled_memories>/);
-    assert.equal(queries.length, 3);
+    assert.equal(queries.length, 4);
 
     const searchTool = mock.tools.get("memory_search");
     const storeTool = mock.tools.get("memory_store");
@@ -365,7 +451,12 @@ async function testRecallLifecycleAndToolBounds(): Promise<void> {
 
     const tooLarge = await storeTool.execute(
       "call-2",
-      { kind: "fact", subject: "large memory", body: "x".repeat(2_001) },
+      {
+        kind: "fact",
+        scope: "project",
+        subject: "large memory",
+        body: "x".repeat(2_001),
+      },
       undefined,
       undefined,
       ctx,
@@ -394,7 +485,9 @@ async function testConcurrentSpoolClaim(): Promise<void> {
       await delay(20);
     },
   };
-  const ctx = {} as never;
+  const ctx = {
+    sessionManager: { getCwd: () => "/tmp/project" },
+  } as never;
 
   try {
     const first = new SpoolQueue(options, directory);
@@ -406,9 +499,10 @@ async function testConcurrentSpoolClaim(): Promise<void> {
     first.addTurn([{ type: "user", text: "Use pnpm." }], ctx);
     const pending = join(directory, `pending-${process.pid}.txt`);
     assert.deepEqual(JSON.parse(await readFile(pending, "utf8")), {
-      version: 2,
+      version: 3,
       turns: [[{ type: "user", text: "Use pnpm." }]],
       overlapTurns: [],
+      cwd: "/tmp/project",
     });
 
     const corrupt = join(directory, "2000-1.txt");

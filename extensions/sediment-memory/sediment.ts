@@ -57,6 +57,8 @@ export const MEMORY_SEPARATOR = "\n\n---\n\n";
 export interface RecallResult {
   content: string;
   id: string;
+  /** True when the item belongs to a different project than the command cwd. */
+  cross_project?: boolean;
   /** Ranking score with sediment's recency/access boost applied. */
   similarity: string;
   /** Plain cosine similarity; absent on older sediment versions. */
@@ -84,7 +86,8 @@ export function renderMemorySearchResults(results: RecallResult[]): string {
   let output = MEMORY_SEARCH_WARNING;
 
   for (const result of results) {
-    const block = `[id=${result.id} similarity=${result.similarity}]\n${result.content}`;
+    const crossProject = result.cross_project ? " cross_project=true" : "";
+    const block = `[id=${result.id} similarity=${result.similarity}${crossProject}]\n${result.content}`;
     const addition = MEMORY_SEPARATOR + block;
     if (output.length + addition.length <= MEMORY_SEARCH_MAX_CHARS) {
       output += addition;
@@ -113,56 +116,73 @@ export function renderMemorySearchResults(results: RecallResult[]): string {
  * Callers state memory operations and do not construct sediment commands.
  */
 export class SedimentStore {
-  private binaryMissing = false;
   private readonly versionsDir = join(SEDIMENT_DB, "items.lance", "_versions");
 
   async search(
     query: string,
     limit: number,
     signal?: AbortSignal,
+    cwd = "/",
   ): Promise<RecallResult[]> {
     const raw = await this.command(
       ["recall", query, "--limit", String(limit), "--json"],
-      { signal },
+      { signal, cwd },
     );
     const parsed = JSON.parse(raw) as { results: RecallResult[] };
     return parsed.results;
   }
 
-  async storeFacts(facts: Fact[]): Promise<void> {
-    for (const fact of facts) await this.storeFact(fact);
+  async storeFacts(facts: Fact[], cwd = "/"): Promise<void> {
+    for (const fact of facts) await this.storeFact(fact, cwd);
     if (facts.length > 0) await this.maintain();
   }
 
-  async forget(id: string): Promise<void> {
-    await this.command(["forget", id]);
+  async forget(id: string, cwd = "/"): Promise<void> {
+    await this.command(["forget", id], { cwd });
   }
 
   /**
    * Replace an existing item with the same `[kind] subject:` prefix.
    * Sediment has no native key lookup, so semantic recall approximates it.
    */
-  private async storeFact(fact: Fact): Promise<void> {
+  private async storeFact(fact: Fact, originCwd: string): Promise<void> {
     const rendered = `[${fact.kind}] ${fact.subject}: ${fact.body}`;
     const prefix = `[${fact.kind}] ${fact.subject}:`;
+    const cwd = fact.scope === "project" ? originCwd : "/";
 
     let replace: string | undefined;
     try {
-      const previous = await this.search(rendered, 3);
+      const [previous, scopedIds] = await Promise.all([
+        this.search(rendered, 12, undefined, cwd),
+        this.idsInScope(fact.scope, cwd),
+      ]);
       const hit = previous.find(
         (result) =>
-          result.content.startsWith(prefix) ||
-          (result.content.startsWith(`[${fact.kind}] `) &&
-            rawSimilarity(result) >= SUPERSEDE_SIMILARITY),
+          scopedIds.has(result.id) &&
+          (result.content.startsWith(prefix) ||
+            (result.content.startsWith(`[${fact.kind}] `) &&
+              rawSimilarity(result) >= SUPERSEDE_SIMILARITY)),
       );
       replace = hit?.id;
     } catch {
-      // Lookup is best-effort. A plain store can still succeed.
+      // lookup is best-effort. a plain store can still succeed.
     }
 
-    const args = ["store", rendered, "--scope", "global"];
+    const args = ["store", rendered, "--scope", fact.scope];
     if (replace) args.push("--replace", replace);
-    await this.command(args);
+    await this.command(args, { cwd });
+  }
+
+  private async idsInScope(
+    scope: Fact["scope"],
+    cwd: string,
+  ): Promise<Set<string>> {
+    const raw = await this.command(
+      ["list", "--scope", scope, "--limit", "10000", "--json"],
+      { cwd },
+    );
+    const parsed = JSON.parse(raw) as { items: Array<{ id: string }> };
+    return new Set(parsed.items.map((item) => item.id));
   }
 
   /**
@@ -192,13 +212,10 @@ export class SedimentStore {
 
   private async command(
     args: string[],
-    options: { signal?: AbortSignal; timeout?: number } = {},
+    options: { signal?: AbortSignal; timeout?: number; cwd?: string } = {},
   ): Promise<string> {
-    if (this.binaryMissing) throw new Error("sediment unavailable");
-
     const result = await this.run(args, options);
     if (result.code !== 0) {
-      if (result.missing) this.binaryMissing = true;
       throw new Error(`sediment ${args[0]} failed: ${result.stderr}`);
     }
     return result.stdout;
@@ -206,25 +223,23 @@ export class SedimentStore {
 
   /**
    * Spawn sediment directly because node's execFile can outlive a pi
-   * session runtime. Sediment assigns the detected project even with
-   * `--scope global`. Running from `/` prevents project detection, keeps
-   * writes global, and avoids stray `.sediment` directories.
+   * session runtime. The command cwd supplies Sediment's project context;
+   * the central SEDIMENT_DB remains independent of the repository.
    */
   private run(
     args: string[],
-    options: { signal?: AbortSignal; timeout?: number },
+    options: { signal?: AbortSignal; timeout?: number; cwd?: string },
   ): Promise<{
     code: number;
     stdout: string;
     stderr: string;
-    missing: boolean;
   }> {
     return new Promise((resolve) => {
       execFile(
         SEDIMENT_BIN,
         args,
         {
-          cwd: "/",
+          cwd: options.cwd ?? "/",
           env: { ...process.env, SEDIMENT_DB },
           timeout: options.timeout ?? SEDIMENT_TIMEOUT,
           signal: options.signal,
@@ -232,7 +247,7 @@ export class SedimentStore {
         },
         (error, stdout, stderr) => {
           if (!error) {
-            resolve({ code: 0, stdout, stderr, missing: false });
+            resolve({ code: 0, stdout, stderr });
             return;
           }
           const processError = error as Error & { code?: number | string };
@@ -247,7 +262,6 @@ export class SedimentStore {
             code,
             stdout,
             stderr: stderr || processError.message,
-            missing,
           });
         },
       );
