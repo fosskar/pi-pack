@@ -8,7 +8,7 @@ import type { AgentEndEvent } from "@earendil-works/pi-coding-agent";
 const RECALL_CONTEXT_TURNS = 3;
 const RECALL_MAX_QUERY_CHARS = 4_000;
 
-type AgentMessage = AgentEndEvent["messages"][number];
+export type AgentMessage = AgentEndEvent["messages"][number];
 
 export type EvidenceRecord =
   | { type: "user" | "assistant" | "context"; text: string }
@@ -446,6 +446,12 @@ function parseCaptureSpool(raw: string): CaptureSpool | undefined {
 export function prepareSpoolExtraction(raw: string): ExtractionRequest {
   const spool = parseCaptureSpool(raw);
   if (!spool) {
+    // legacy spools were plaintext transcripts. a JSON-looking file is a
+    // corrupt/current spool and must remain queued instead of being parsed as
+    // legacy text and deleted after a zero-fact extraction.
+    if (raw.trimStart().startsWith("{")) {
+      throw new Error("invalid structured memory spool");
+    }
     return {
       input: raw.slice(-EXTRACT_INPUT_CAP),
       prompt: LEGACY_EXTRACT_PROMPT,

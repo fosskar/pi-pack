@@ -8,6 +8,10 @@ import { rm, writeFile } from "node:fs/promises";
 import { KINDS, type Fact, type Kind } from "./evidence.ts";
 import { renderMemorySearchResults, sedimentStore } from "./sediment.ts";
 
+const SEARCH_LIMIT_MAX = 50;
+const MEMORY_SUBJECT_MAX_CHARS = 128;
+const MEMORY_BODY_MAX_CHARS = 2_000;
+
 interface MemoryInterfaceOptions {
   isDisabled(ctx: ExtensionContext): boolean;
   markerPath(ctx: ExtensionContext): string | undefined;
@@ -66,9 +70,14 @@ export function registerMemoryInterface(
       "Search memory when asked about past conversations, user preferences, or previously used IDs/commands.",
     ],
     parameters: Type.Object({
-      query: Type.String({ description: "Search query" }),
+      query: Type.String({ description: "Search query", maxLength: 4_000 }),
       limit: Type.Optional(
-        Type.Number({ description: "Max results (default 5)", default: 5 }),
+        Type.Integer({
+          description: "Max results (default 5)",
+          default: 5,
+          minimum: 1,
+          maximum: SEARCH_LIMIT_MAX,
+        }),
       ),
     }),
     async execute(
@@ -80,11 +89,11 @@ export function registerMemoryInterface(
     ) {
       if (options.isDisabled(ctx)) return disabledResult();
       try {
-        const results = await sedimentStore.search(
-          params.query,
-          params.limit ?? 5,
-          signal,
+        const limit = Math.max(
+          1,
+          Math.min(SEARCH_LIMIT_MAX, Math.trunc(params.limit ?? 5)),
         );
+        const results = await sedimentStore.search(params.query, limit, signal);
         if (results.length === 0) {
           return {
             content: [{ type: "text" as const, text: "No memories found." }],
@@ -135,9 +144,11 @@ export function registerMemoryInterface(
         description:
           "Stable lowercase key of 2-6 words; a later store with the same " +
           "subject supersedes this one",
+        maxLength: MEMORY_SUBJECT_MAX_CHARS,
       }),
       body: Type.String({
         description: "One concise sentence, exact identifier, or command",
+        maxLength: MEMORY_BODY_MAX_CHARS,
       }),
     }),
     async execute(
@@ -174,6 +185,22 @@ export function registerMemoryInterface(
             },
           ],
           details: { error: "empty field" },
+        };
+      }
+      if (
+        fact.subject.length > MEMORY_SUBJECT_MAX_CHARS ||
+        fact.body.length > MEMORY_BODY_MAX_CHARS
+      ) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `Memory is too large (subject max ${MEMORY_SUBJECT_MAX_CHARS}, ` +
+                `body max ${MEMORY_BODY_MAX_CHARS} characters).`,
+            },
+          ],
+          details: { error: "memory too large" },
         };
       }
       try {

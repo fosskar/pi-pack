@@ -6,7 +6,7 @@ import piToPiTest from "../../extensions/pi-to-PI/test/pi-to-PI.test.ts";
 import sedimentMemoryTest from "../../extensions/sediment-memory/test/sediment-memory.test.ts";
 import sketchTest from "../../extensions/sketch/test/sketch.test.ts";
 
-sedimentMemoryTest();
+await sedimentMemoryTest();
 await btwTest();
 await clipboardTest();
 await llmWikiTest();

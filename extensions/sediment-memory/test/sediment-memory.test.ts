@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import extension, {
   buildEvidenceTurn,
   composeRecallKey,
@@ -6,9 +10,11 @@ import extension, {
   prepareEvidenceExtraction,
   prepareSpoolExtraction,
   renderMemorySearchResults,
+  sedimentStore,
   type EvidenceRecord,
   type RecallResult,
 } from "../index.ts";
+import { SpoolQueue } from "../spool.ts";
 import { createMockPi } from "../../../nix/test/helpers.ts";
 
 function testStructuredCapture(): void {
@@ -135,6 +141,11 @@ function testSpoolCompatibility(): void {
   assert.deepEqual(legacy.parse("pref | package manager | Use pnpm."), [
     { kind: "pref", subject: "package manager", body: "Use pnpm." },
   ]);
+
+  assert.throws(
+    () => prepareSpoolExtraction('{"version":2,"turns":['),
+    /invalid structured memory spool/,
+  );
 
   const current = prepareSpoolExtraction(
     JSON.stringify({
@@ -265,7 +276,158 @@ function testSearchRendering(): void {
   assert.match(large, /Memory results truncated/);
 }
 
-export default function (): void {
+async function testRecallLifecycleAndToolBounds(): Promise<void> {
+  const mock = createMockPi();
+  extension(mock.pi as never);
+  const beforeAgentStart = mock.events.get("before_agent_start")?.[0];
+  const sessionCompact = mock.events.get("session_compact")?.[0];
+  assert.ok(beforeAgentStart);
+  assert.ok(sessionCompact);
+
+  const ctx = {
+    sessionManager: {
+      getSessionDir: () => undefined,
+      getBranch: () => [
+        {
+          type: "message",
+          message: {
+            role: "user",
+            content: "Enable gatus on gateway.",
+            timestamp: 1,
+          },
+        },
+        {
+          type: "message",
+          message: {
+            role: "assistant",
+            content: [{ type: "text", text: "Gatus is enabled." }],
+            timestamp: 2,
+          },
+        },
+      ],
+    },
+  };
+  const event = { prompt: "yes", systemPrompt: "base prompt" };
+  const originalSearch = sedimentStore.search;
+  const originalStoreFacts = sedimentStore.storeFacts;
+  const queries: string[] = [];
+  let failNext = false;
+  let searchedLimit: number | undefined;
+  let storeCalls = 0;
+
+  sedimentStore.search = async (query, limit) => {
+    queries.push(query);
+    searchedLimit = limit;
+    if (failNext) {
+      failNext = false;
+      throw new Error("temporary failure");
+    }
+    return [
+      {
+        id: "memory-1",
+        content: "[pref] monitoring tool: Use gatus.",
+        similarity: "0.8",
+        raw_similarity: "0.8",
+      },
+    ];
+  };
+  sedimentStore.storeFacts = async () => {
+    storeCalls += 1;
+  };
+
+  try {
+    const first = await beforeAgentStart(event, ctx);
+    const second = await beforeAgentStart(event, ctx);
+    assert.match(queries[0], /Enable gatus on gateway\./);
+    assert.equal(queries.length, 1);
+    assert.equal(first.systemPrompt, second.systemPrompt);
+    assert.match(first.systemPrompt, /<recalled_memories>/);
+
+    await sessionCompact({}, ctx);
+    failNext = true;
+    assert.equal(await beforeAgentStart(event, ctx), undefined);
+    const retried = await beforeAgentStart(event, ctx);
+    assert.match(retried.systemPrompt, /<recalled_memories>/);
+    assert.equal(queries.length, 3);
+
+    const searchTool = mock.tools.get("memory_search");
+    const storeTool = mock.tools.get("memory_store");
+    assert.ok(searchTool);
+    assert.ok(storeTool);
+    await searchTool.execute(
+      "call-1",
+      { query: "gatus", limit: 1_000 },
+      undefined,
+      undefined,
+      ctx,
+    );
+    assert.equal(searchedLimit, 50);
+
+    const tooLarge = await storeTool.execute(
+      "call-2",
+      { kind: "fact", subject: "large memory", body: "x".repeat(2_001) },
+      undefined,
+      undefined,
+      ctx,
+    );
+    assert.deepEqual(tooLarge.details, { error: "memory too large" });
+    assert.equal(storeCalls, 0);
+  } finally {
+    sedimentStore.search = originalSearch;
+    sedimentStore.storeFacts = originalStoreFacts;
+  }
+}
+
+async function testConcurrentSpoolClaim(): Promise<void> {
+  const directory = await mkdtemp(join(tmpdir(), "sediment-spool-test-"));
+  const spool = JSON.stringify({
+    version: 2,
+    turns: [[{ type: "user", text: "Remember pnpm." }]],
+    overlapTurns: [],
+  });
+  await writeFile(join(directory, "1000-1.txt"), spool);
+  let extractionCalls = 0;
+  const options = {
+    isDisabled: () => false,
+    extractAndStore: async () => {
+      extractionCalls += 1;
+      await delay(20);
+    },
+  };
+  const ctx = {} as never;
+
+  try {
+    const first = new SpoolQueue(options, directory);
+    const second = new SpoolQueue(options, directory);
+    await Promise.all([first.drain(ctx), second.drain(ctx)]);
+    assert.equal(extractionCalls, 1);
+    assert.deepEqual(await readdir(directory), []);
+
+    first.addTurn([{ type: "user", text: "Use pnpm." }], ctx);
+    const pending = join(directory, `pending-${process.pid}.txt`);
+    assert.deepEqual(JSON.parse(await readFile(pending, "utf8")), {
+      version: 2,
+      turns: [[{ type: "user", text: "Use pnpm." }]],
+      overlapTurns: [],
+    });
+
+    const corrupt = join(directory, "2000-1.txt");
+    await writeFile(corrupt, '{"version":2,"turns":[');
+    const originalConsoleError = console.error;
+    try {
+      console.error = () => {};
+      await first.drain(ctx);
+    } finally {
+      console.error = originalConsoleError;
+    }
+    assert.equal(await readFile(corrupt, "utf8"), '{"version":2,"turns":[');
+    assert.equal(extractionCalls, 1);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+export default async function (): Promise<void> {
   const mock = createMockPi();
   extension(mock.pi as never);
   assert.ok(mock.tools.get("memory_search"));
@@ -277,4 +439,6 @@ export default function (): void {
   testProvenanceGate();
   testSpoolCompatibility();
   testSearchRendering();
+  await testRecallLifecycleAndToolBounds();
+  await testConcurrentSpoolClaim();
 }

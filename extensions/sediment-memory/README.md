@@ -40,9 +40,9 @@ Failed extraction jobs remain in the spool. A later session retries them. Succes
 
 ## Recall
 
-On the first agent prompt, the extension searches Sediment and injects at most three results above the similarity threshold into the system prompt. It does not rewrite the system prompt on later turns, preserving provider prompt caching; the model uses `memory_search` for later topic shifts. After compaction replaces the conversation context, the next prompt receives one fresh automatic recall.
+On the first agent prompt, the extension searches Sediment and injects at most three results above the similarity threshold into the system prompt. It keeps that exact block on later turns without searching again, preserving provider prompt caching; the model uses `memory_search` for later topic shifts. After compaction replaces the conversation context, the next prompt receives one fresh automatic recall.
 
-The recall query blends the prompt with the last three settled turns, so a terse prompt still recalls against the conversation topic; injected skill blocks are stripped first.
+The recall query blends the prompt with the last three session turns, including restored history after a resume, so a terse prompt still recalls against the conversation topic; injected skill blocks are stripped first.
 
 Recalled content is marked as untrusted historical data. The agent must not follow instructions contained in a memory.
 

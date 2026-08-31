@@ -1,5 +1,5 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { readdir, readFile, rename, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -25,15 +25,16 @@ interface SpoolQueueOptions {
 }
 
 export class SpoolQueue {
-  private readonly pendingPath = join(SPOOL_DIR, `pending-${process.pid}.txt`);
+  private readonly pendingPath: string;
   private turns: EvidenceRecord[][] = [];
   private overlap: EvidenceRecord[][] = [];
   private queued: Promise<void> = Promise.resolve();
 
-  constructor(private readonly options: SpoolQueueOptions) {}
-
-  getRecallTurns(): EvidenceRecord[][] {
-    return [...this.overlap, ...this.turns];
+  constructor(
+    private readonly options: SpoolQueueOptions,
+    private readonly spoolDir = SPOOL_DIR,
+  ) {
+    this.pendingPath = join(spoolDir, `pending-${process.pid}.txt`);
   }
 
   addTurn(turn: EvidenceRecord[], ctx: ExtensionContext): void {
@@ -60,26 +61,43 @@ export class SpoolQueue {
     if (this.options.isDisabled(ctx)) return;
     let names: string[];
     try {
-      names = await readdir(SPOOL_DIR);
+      names = await readdir(this.spoolDir);
     } catch {
       return;
     }
 
     for (const name of names.sort()) {
       if (name.endsWith(".failed")) continue;
-      const path = join(SPOOL_DIR, name);
+      const path = join(this.spoolDir, name);
+      if (name.endsWith(".tmp") && !(await this.claimIsStale(path))) continue;
       if (name.startsWith("pending-") && !(await this.pendingIsStale(path))) {
         continue;
       }
+      if (name.includes(".processing-") && !(await this.claimIsStale(path))) {
+        continue;
+      }
+
+      const canonicalPath = path.replace(/(?:\.processing-[^.]+)+$/, "");
+      const claimedPath = `${canonicalPath}.processing-${process.pid}-${Date.now()}`;
       try {
-        const raw = await readFile(path, "utf8");
+        await rename(path, claimedPath);
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") {
+          console.error("memory: failed to claim spool file", name, error);
+        }
+        continue;
+      }
+
+      try {
+        const raw = await readFile(claimedPath, "utf8");
         if (raw.trim()) {
           await this.options.extractAndStore(ctx, prepareSpoolExtraction(raw));
         }
-        await rm(path, { force: true });
+        await rm(claimedPath, { force: true });
       } catch (error) {
         console.error("memory: failed to drain spool file", name, error);
-        await this.quarantineIfExpired(path, name);
+        await this.restoreOrQuarantine(claimedPath, canonicalPath, name);
       }
     }
   }
@@ -103,8 +121,7 @@ export class SpoolQueue {
 
   private writePending(): void {
     try {
-      mkdirSync(SPOOL_DIR, { recursive: true });
-      writeFileSync(this.pendingPath, this.render());
+      this.writeAtomic(this.pendingPath, this.render());
     } catch (error) {
       console.error("memory: failed to write pending spool", error);
     }
@@ -118,9 +135,8 @@ export class SpoolQueue {
       return false;
     }
     try {
-      mkdirSync(SPOOL_DIR, { recursive: true });
-      writeFileSync(
-        join(SPOOL_DIR, `${Date.now()}-${process.pid}.txt`),
+      this.writeAtomic(
+        join(this.spoolDir, `${Date.now()}-${process.pid}.txt`),
         this.render(),
       );
       this.overlap = this.turns.slice(-RETAIN_OVERLAP_TURNS);
@@ -133,6 +149,17 @@ export class SpoolQueue {
     }
   }
 
+  private writeAtomic(path: string, content: string): void {
+    mkdirSync(this.spoolDir, { recursive: true });
+    const temporary = `${path}.${process.pid}.tmp`;
+    try {
+      writeFileSync(temporary, content);
+      renameSync(temporary, path);
+    } finally {
+      rmSync(temporary, { force: true });
+    }
+  }
+
   private async pendingIsStale(path: string): Promise<boolean> {
     try {
       return Date.now() - (await stat(path)).mtimeMs >= PENDING_SPOOL_STALE_MS;
@@ -141,18 +168,31 @@ export class SpoolQueue {
     }
   }
 
-  private async quarantineIfExpired(path: string, name: string): Promise<void> {
+  private async claimIsStale(path: string): Promise<boolean> {
+    try {
+      return Date.now() - (await stat(path)).mtimeMs >= PENDING_SPOOL_STALE_MS;
+    } catch {
+      return false;
+    }
+  }
+
+  private async restoreOrQuarantine(
+    claimedPath: string,
+    canonicalPath: string,
+    name: string,
+  ): Promise<void> {
     let age: number;
     try {
-      age = Date.now() - (await stat(path)).mtimeMs;
+      age = Date.now() - (await stat(claimedPath)).mtimeMs;
     } catch {
       return;
     }
-    if (age <= SPOOL_RETRY_WINDOW) return;
+    const target =
+      age > SPOOL_RETRY_WINDOW ? `${canonicalPath}.failed` : canonicalPath;
     try {
-      await rename(path, `${path}.failed`);
+      await rename(claimedPath, target);
     } catch (error) {
-      console.error("memory: failed to quarantine spool file", name, error);
+      console.error("memory: failed to restore spool file", name, error);
     }
   }
 }
