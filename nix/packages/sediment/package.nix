@@ -19,7 +19,10 @@ rustPlatform.buildRustPackage rec {
   # upstream drains the consolidation queue only from mcp server mode
   # (spawn_consolidation is called once, in src/mcp/tools.rs); the cli
   # enqueues candidates that nothing ever processes
-  patches = [ ./consolidate-subcommand.patch ];
+  patches = [
+    ./central-project-config.patch
+    ./consolidate-subcommand.patch
+  ];
 
   cargoHash = "sha256-NfXChnMYyNyyT3ocdT65Ic6Iu3Zp0LtuTR/Je8FzqZc=";
 
