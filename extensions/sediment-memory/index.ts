@@ -899,6 +899,9 @@ export default function (pi: ExtensionAPI) {
   // Tail of the last finalized batch, carried into the next batch as
   // context-only records.
   let overlapTurns: EvidenceRecord[][] = [];
+  // Auto-recall once per stable context. Compaction replaces that context,
+  // so the next prompt gets one fresh recall injection.
+  let hasAutoRecalled = false;
   const pendingSpoolPath = join(SPOOL_DIR, `pending-${process.pid}.txt`);
 
   // Extraction never runs on a hook the UI awaits. Work is chained onto
@@ -1027,6 +1030,7 @@ export default function (pi: ExtensionAPI) {
 
   // Compaction summaries are the narrative layer — store whole.
   pi.on("session_compact", (event, ctx) => {
+    hasAutoRecalled = false;
     const summary = event.compactionEntry.summary?.trim();
     if (isMemoryDisabled(ctx)) return;
     if (!summary) return;
@@ -1074,11 +1078,12 @@ export default function (pi: ExtensionAPI) {
     enqueue(() => drainSpool(ctx));
   });
 
-  // Recall: inject relevant memories before each prompt. The query
-  // blends recent settled turns so terse prompts recall on-topic;
-  // overlapTurns covers the window right after a batch flush.
+  // Recall once on the first prompt, then again after compaction replaces
+  // the context. Stable injection preserves provider prompt caching; later
+  // topic shifts use memory_search explicitly.
   pi.on("before_agent_start", async (event, ctx) => {
-    if (isMemoryDisabled(ctx)) return;
+    if (isMemoryDisabled(ctx) || hasAutoRecalled) return;
+    hasAutoRecalled = true;
     const key = composeRecallKey(event.prompt ?? "", [
       ...overlapTurns,
       ...turnBuffer,
