@@ -65,7 +65,7 @@ The `memory_store` tool stores one item immediately, bypassing batched extractio
 
 A later store with the same subject supersedes the earlier item.
 
-The `memory_forget` tool deletes one item by the id shown in `memory_search` results, for memories the user declares wrong or outdated:
+The `memory_forget` tool deletes one item by id. All three tools are the model's interface, not the user's: the user speaks naturally ("what did I say about feature-owned modules?", "remember that my name is Oscar", "forget that old rule") and the model searches, stores, and deletes on its own judgment. It is expected to curate: a recalled memory contradicted by newer information gets deleted and, when a correction exists, replaced.
 
 ```json
 {

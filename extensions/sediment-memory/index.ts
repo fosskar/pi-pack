@@ -1220,9 +1220,10 @@ export default function (pi: ExtensionAPI) {
       "Store one durable item in long-term memory immediately. Use for " +
       "information the user explicitly asks to remember.",
     promptGuidelines: [
-      "Store a memory when the user explicitly asks to remember, note, or " +
-        "not forget something. Do not store transient task state, secrets, " +
-        "or information the user did not ask to keep.",
+      "Store a memory when the user asks to remember, note, or not " +
+        "forget something (\u201cremember that\u2026\u201d, \u201cdon't forget\u2026\u201d), and when a " +
+        "stated fact corrects an existing memory. Do not store transient " +
+        "task state or secrets.",
     ],
     parameters: Type.Object({
       kind: Type.String({
@@ -1313,9 +1314,11 @@ export default function (pi: ExtensionAPI) {
     label: "Memory Forget",
     description: "Delete one item from long-term memory by its id.",
     promptGuidelines: [
-      "Forget a memory only when the user asks to remove it, or confirms " +
-        "a recalled item is wrong or outdated. Get the id from " +
-        "memory_search results. Never delete on your own judgment.",
+      "Curate memory actively: when a recalled or searched item is " +
+        "contradicted by newer information, duplicated, or clearly " +
+        "outdated, delete it with the id from memory_search results " +
+        "\u2014 no need to ask. When a correction replaces it, store the " +
+        "corrected item too.",
     ],
     parameters: Type.Object({
       id: Type.String({ description: "Item id from memory_search results" }),
