@@ -138,11 +138,6 @@ export class SedimentStore {
     await this.command(["forget", id]);
   }
 
-  async storeNarrative(content: string): Promise<void> {
-    await this.command(["store", content, "--scope", "global"]);
-    await this.maintain();
-  }
-
   /**
    * Replace an existing item with the same `[kind] subject:` prefix.
    * Sediment has no native key lookup, so semantic recall approximates it.

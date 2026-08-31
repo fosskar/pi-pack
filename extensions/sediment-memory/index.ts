@@ -56,17 +56,11 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  pi.on("session_compact", (event, ctx) => {
+  // The turn pipeline has already extracted durable facts. Compaction
+  // summaries are large, redundant documents; only refresh recall after
+  // Pi replaces the conversation context.
+  pi.on("session_compact", () => {
     hasAutoRecalled = false;
-    const summary = event.compactionEntry.summary?.trim();
-    if (isMemoryDisabled(ctx) || !summary) return;
-    spool.enqueue(async () => {
-      try {
-        await sedimentStore.storeNarrative(summary);
-      } catch (error) {
-        console.error("memory: failed to store compaction summary", error);
-      }
-    });
   });
 
   // agent_end may fire more than once for retries; agent_settled commits

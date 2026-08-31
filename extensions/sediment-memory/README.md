@@ -34,7 +34,7 @@ Extraction keeps evidence-backed items such as:
 - Successful command examples.
 - Open tasks.
 
-A newer fact can replace a semantically similar older fact. Session compaction summaries are stored as a narrative memory layer.
+A newer fact can replace a semantically similar older fact. Pi compaction summaries are not stored: the turn pipeline has already extracted their durable facts, and storing the whole summary would duplicate them as one large document.
 
 Failed extraction jobs remain in the spool. A later session retries them. Successful jobs are removed only after all memory writes complete.
 
