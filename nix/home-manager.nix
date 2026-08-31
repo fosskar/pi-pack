@@ -73,6 +73,11 @@ in
 
     home.file =
       resourceEntries ".pi/agent/extensions" (self + "/extensions") cfg.extensions
+      # deployed from a build that pins the sediment store path, not from
+      # raw source with the PATH fallback
+      // lib.optionalAttrs (builtins.elem "sediment-memory" cfg.extensions) {
+        ".pi/agent/extensions/sediment-memory".source = cfg.package.sediment-memory;
+      }
       // resourceEntries ".pi/agent/skills" (self + "/skills") cfg.skills
       // resourceEntries ".pi/agent/prompts" (self + "/prompts") cfg.prompts
       // resourceEntries ".pi/agent/themes" (self + "/themes") cfg.themes;

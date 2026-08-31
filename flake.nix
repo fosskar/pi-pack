@@ -69,6 +69,9 @@
         };
 
       sedimentPackage = pkgs: pkgs.callPackage ./nix/packages/sediment/package.nix { };
+      sedimentMemoryPackage =
+        pkgs:
+        pkgs.callPackage ./nix/packages/sediment-memory/package.nix { sediment = sedimentPackage pkgs; };
       osmCliPackage = pkgs: pkgs.callPackage ./skills/osm { };
       paperlessCliPackage = pkgs: pkgs.callPackage ./skills/paperless { };
 
@@ -151,6 +154,7 @@
         osm-cli = osmCliPackage pkgs;
         paperless-cli = paperlessCliPackage pkgs;
         sediment = sedimentPackage pkgs;
+        sediment-memory = sedimentMemoryPackage pkgs;
       });
 
       checks = eachSystem (pkgs: {
@@ -158,6 +162,7 @@
         osm-cli = osmCliPackage pkgs;
         paperless-cli = paperlessCliPackage pkgs;
         sediment = sedimentPackage pkgs;
+        sediment-memory = sedimentMemoryPackage pkgs;
         home-manager = (homeConfiguration pkgs extensions skills).activationPackage;
         home-manager-no-memory =
           (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory") extensions) skills)
