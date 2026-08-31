@@ -282,7 +282,12 @@ BODY is one concise sentence, exact identifier, or exact command.
 No code fences. Do not emit pleasantries, one-off answers, weather,
 time-of-day information, completed work, or tool errors.`;
 
-/** Hard cap on what we hand the extractor — keeps the side-call cheap. */
+/**
+ * Cap on what we hand the extractor — keeps the side-call cheap. Budgeted
+ * per turn, not per call: a flat per-call cap made a RETAIN_EVERY_N_TURNS
+ * batch truncate in 66% of extractions and drop 32% of all records,
+ * measured by replaying the session log.
+ */
 const EXTRACT_INPUT_CAP = 6_000;
 const EVIDENCE_RECORD_CAP = 2_000;
 
@@ -351,13 +356,14 @@ export function prepareEvidenceExtraction(turns: EvidenceRecord[][]): {
     .flat()
     .map(truncateEvidenceRecord)
     .filter((record): record is EvidenceRecord => record !== undefined);
+  const cap = EXTRACT_INPUT_CAP * Math.max(1, turns.length);
   const selected: EvidenceRecord[] = [];
   let size = 0;
 
   for (let index = records.length - 1; index >= 0; index--) {
     const record = records[index];
     const estimate = JSON.stringify(record).length + 32;
-    if (size + estimate > EXTRACT_INPUT_CAP) continue;
+    if (size + estimate > cap) continue;
     selected.unshift(record);
     size += estimate;
   }
@@ -376,7 +382,7 @@ export function prepareEvidenceExtraction(turns: EvidenceRecord[][]): {
 
   while (
     sources.length > 1 &&
-    sources.map(renderEvidenceSource).join("\n").length > EXTRACT_INPUT_CAP
+    sources.map(renderEvidenceSource).join("\n").length > cap
   ) {
     const removable = sources.findIndex(
       (source) => source.record.type !== "user",
