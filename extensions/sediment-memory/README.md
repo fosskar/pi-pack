@@ -23,7 +23,9 @@ The parent `sediment/` directory also contains access data and the durable extra
 
 ## Capture
 
-The extension collects settled conversation turns. Every four turns, it writes a durable spool job and starts background extraction. Session shutdown flushes a shorter pending batch.
+The extension collects settled conversation turns. Every settled turn is mirrored to a pending spool file, so a crash loses at most the turn in flight. Every four turns the pending batch becomes a durable spool job and background extraction starts. Session shutdown flushes a shorter pending batch; a pending file orphaned by a dead session is drained after one hour.
+
+Each batch carries the last two turns of the previous batch as context-only records: the extractor can resolve references across the batch boundary but cannot cite them as evidence, so re-seen turns produce no duplicate facts.
 
 Extraction keeps evidence-backed items such as:
 
@@ -50,6 +52,18 @@ The `memory_search` tool performs explicit semantic search:
   "limit": 5
 }
 ```
+
+The `memory_store` tool stores one item immediately, bypassing batched extraction. The model calls it when the user explicitly asks to remember something:
+
+```json
+{
+  "kind": "pref",
+  "subject": "commit style",
+  "body": "Linux-kernel style commit messages without trailers."
+}
+```
+
+A later store with the same subject supersedes the earlier item.
 
 ## Session control
 

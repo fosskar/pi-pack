@@ -147,6 +147,44 @@ function testSpoolCompatibility(): void {
     [{ kind: "pref", subject: "package manager", body: "Use pnpm." }],
   );
 
+  const overlap = prepareSpoolExtraction(
+    JSON.stringify({
+      version: 2,
+      turns: [[{ type: "user", text: "Do that for gateway too." }]],
+      overlapTurns: [
+        [
+          { type: "user", text: "Enable gatus on desktop." },
+          { type: "command", command: "nix build .#x", succeeded: true },
+        ],
+      ],
+    }),
+  );
+  // overlap records are demoted to x* context and precede the batch
+  assert.match(overlap.input, /^x1 \| context \| "earlier user: Enable/);
+  assert.match(overlap.input, /x2 \| context \| "earlier command \(success\)/);
+  assert.match(overlap.input, /u1 \| user \| "Do that for gateway too\."/);
+  // context records are rejected as evidence for every kind
+  assert.deepEqual(
+    overlap.parse("fact | gatus rollout | Enable gatus. | evidence=x1"),
+    [],
+  );
+  assert.deepEqual(
+    overlap.parse("howto | build x | nix build .#x | evidence=x2"),
+    [],
+  );
+  assert.deepEqual(
+    overlap.parse(
+      "todo | gatus on gateway | Enable gatus on gateway. | evidence=u1",
+    ),
+    [
+      {
+        kind: "todo",
+        subject: "gatus on gateway",
+        body: "Enable gatus on gateway.",
+      },
+    ],
+  );
+
   const large = prepareEvidenceExtraction([
     [
       { type: "user", text: "u".repeat(10_000) },
@@ -192,6 +230,7 @@ export default function (): void {
   const mock = createMockPi();
   extension(mock.pi as never);
   assert.ok(mock.tools.get("memory_search"));
+  assert.ok(mock.tools.get("memory_store"));
 
   testStructuredCapture();
   testProvenanceGate();

@@ -25,8 +25,15 @@ import type {
 import { complete } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -102,6 +109,23 @@ const SPOOL_RETRY_WINDOW = 7 * 24 * 60 * 60 * 1000;
 const RETAIN_EVERY_N_TURNS = 4;
 
 /**
+ * The last turns of a finalized batch ride along with the next batch as
+ * demoted context records, so a turn that resolves a reference across
+ * the batch boundary ("do that for gateway too") still extracts
+ * correctly. Context records cannot be cited as evidence, so re-seen
+ * turns cannot produce duplicate facts. Mirrors hindsight's
+ * retainOverlapTurns.
+ */
+const RETAIN_OVERLAP_TURNS = 2;
+
+/**
+ * A `pending-*` spool file younger than this belongs to a live session
+ * that still rewrites it every turn; older ones are orphans of a dead
+ * session and are drained like finished batches.
+ */
+const PENDING_SPOOL_STALE_MS = 60 * 60 * 1000;
+
+/**
  * Per-session opt-out switch. The marker file `memory-off` lives in
  * the session directory; toggled via the /memory command. No ctx (or
  * no session dir) is treated as "memory enabled" — opt-out convention,
@@ -128,9 +152,11 @@ export type EvidenceRecord =
   | { type: "user" | "assistant" | "context"; text: string }
   | { type: "command"; command: string; succeeded?: boolean };
 
-interface CaptureSpoolV1 {
-  version: 1;
+interface CaptureSpool {
+  version: 1 | 2;
   turns: EvidenceRecord[][];
+  /** v2: tail of the previous batch, demoted to context on extraction. */
+  overlapTurns?: EvidenceRecord[][];
 }
 
 export interface EvidenceSource {
@@ -145,15 +171,17 @@ export interface ExtractionRequest {
 }
 
 function cleanEvidenceText(text: string): string {
-  return text
-    // pi injects skill instructions into the same user text part as the
-    // prompt; without stripping, the extractor cites skill boilerplate
-    // as user-stated facts
-    .replace(/<skill [^>]*>[\s\S]*?<\/skill>/g, "[skill elided]")
-    .replace(/\/nix\/store\/[a-z0-9]{32}-/g, "<nix>/")
-    .replaceAll("</source_records>", "[escaped source_records close]")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return (
+    text
+      // pi injects skill instructions into the same user text part as the
+      // prompt; without stripping, the extractor cites skill boilerplate
+      // as user-stated facts
+      .replace(/<skill [^>]*>[\s\S]*?<\/skill>/g, "[skill elided]")
+      .replace(/\/nix\/store\/[a-z0-9]{32}-/g, "<nix>/")
+      .replaceAll("</source_records>", "[escaped source_records close]")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
 }
 
 function textContent(content: unknown): string {
@@ -359,15 +387,40 @@ function sourcePrefix(record: EvidenceRecord): SourcePrefix {
   return "x";
 }
 
-export function prepareEvidenceExtraction(turns: EvidenceRecord[][]): {
+/**
+ * Overlap turns re-enter the next extraction for context only. Demoting
+ * every record to `context` moves it to the x* prefix, which the parse
+ * gate refuses as evidence for any kind.
+ */
+function demoteToContext(record: EvidenceRecord): EvidenceRecord {
+  if (record.type === "command") {
+    const status =
+      record.succeeded === true
+        ? "success"
+        : record.succeeded === false
+          ? "error"
+          : "unknown";
+    return {
+      type: "context",
+      text: `earlier command (${status}): ${record.command}`,
+    };
+  }
+  if (record.type === "context") return record;
+  return { type: "context", text: `earlier ${record.type}: ${record.text}` };
+}
+
+export function prepareEvidenceExtraction(
+  turns: EvidenceRecord[][],
+  overlapTurns: EvidenceRecord[][] = [],
+): {
   input: string;
   sources: EvidenceSource[];
 } {
-  const records = turns
-    .flat()
+  const records = [...overlapTurns.flat().map(demoteToContext), ...turns.flat()]
     .map(truncateEvidenceRecord)
     .filter((record): record is EvidenceRecord => record !== undefined);
-  const cap = EXTRACT_INPUT_CAP * Math.max(1, turns.length);
+  const cap =
+    EXTRACT_INPUT_CAP * Math.max(1, turns.length + overlapTurns.length);
   const selected: EvidenceRecord[] = [];
   let size = 0;
 
@@ -481,18 +534,20 @@ function isEvidenceRecord(value: unknown): value is EvidenceRecord {
   );
 }
 
-function parseCaptureSpool(raw: string): CaptureSpoolV1 | undefined {
+function parseCaptureSpool(raw: string): CaptureSpool | undefined {
   try {
-    const value = JSON.parse(raw) as Partial<CaptureSpoolV1>;
-    if (value.version !== 1 || !Array.isArray(value.turns)) return undefined;
-    if (
-      !value.turns.every(
+    const value = JSON.parse(raw) as Partial<CaptureSpool>;
+    if (value.version !== 1 && value.version !== 2) return undefined;
+    const validTurns = (turns: unknown): turns is EvidenceRecord[][] =>
+      Array.isArray(turns) &&
+      turns.every(
         (turn) => Array.isArray(turn) && turn.every(isEvidenceRecord),
-      )
-    ) {
+      );
+    if (!validTurns(value.turns)) return undefined;
+    if (value.overlapTurns !== undefined && !validTurns(value.overlapTurns)) {
       return undefined;
     }
-    return value as CaptureSpoolV1;
+    return value as CaptureSpool;
   } catch {
     return undefined;
   }
@@ -508,7 +563,10 @@ export function prepareSpoolExtraction(raw: string): ExtractionRequest {
     };
   }
 
-  const prepared = prepareEvidenceExtraction(spool.turns);
+  const prepared = prepareEvidenceExtraction(
+    spool.turns,
+    spool.overlapTurns ?? [],
+  );
   return {
     input: prepared.input,
     prompt: EXTRACT_PROMPT,
@@ -794,8 +852,13 @@ export default function (pi: ExtensionAPI) {
   let pendingTurn: EvidenceRecord[] | undefined;
   // Turns accumulate here and are extracted in batches of
   // RETAIN_EVERY_N_TURNS, or spooled on session_shutdown, whichever
-  // comes first.
+  // comes first. The buffer is mirrored to a pending spool file after
+  // every settled turn, so a crash loses at most the in-flight turn.
   let turnBuffer: EvidenceRecord[][] = [];
+  // Tail of the last finalized batch, carried into the next batch as
+  // context-only records.
+  let overlapTurns: EvidenceRecord[][] = [];
+  const pendingSpoolPath = join(SPOOL_DIR, `pending-${process.pid}.txt`);
 
   // Extraction never runs on a hook the UI awaits. Work is chained onto
   // this promise instead, so a batch flush and a spool drain cannot
@@ -816,21 +879,50 @@ export default function (pi: ExtensionAPI) {
     await sedimentStore.storeFacts(facts);
   }
 
-  /** Write buffered turns before background extraction starts. */
-  function spoolBuffer(ctx: ExtensionContext): boolean {
+  function renderSpool(): string {
+    const spool: CaptureSpool = {
+      version: 2,
+      turns: turnBuffer,
+      overlapTurns,
+    };
+    return JSON.stringify(spool);
+  }
+
+  function removePendingSpool(): void {
+    try {
+      rmSync(pendingSpoolPath, { force: true });
+    } catch (e) {
+      console.error("memory: failed to remove pending spool", e);
+    }
+  }
+
+  /** Mirror the buffer to disk so a crash cannot lose settled turns. */
+  function writePendingSpool(): void {
+    try {
+      mkdirSync(SPOOL_DIR, { recursive: true });
+      writeFileSync(pendingSpoolPath, renderSpool());
+    } catch (e) {
+      console.error("memory: failed to write pending spool", e);
+    }
+  }
+
+  /** Promote the buffer to a batch file before background extraction. */
+  function finalizeBatch(ctx: ExtensionContext): boolean {
     if (turnBuffer.length === 0) return false;
     if (isMemoryDisabled(ctx)) {
       turnBuffer = [];
+      removePendingSpool();
       return false;
     }
     try {
       mkdirSync(SPOOL_DIR, { recursive: true });
-      const spool: CaptureSpoolV1 = { version: 1, turns: turnBuffer };
       writeFileSync(
         join(SPOOL_DIR, `${Date.now()}-${process.pid}.txt`),
-        JSON.stringify(spool),
+        renderSpool(),
       );
+      overlapTurns = turnBuffer.slice(-RETAIN_OVERLAP_TURNS);
       turnBuffer = [];
+      removePendingSpool();
       return true;
     } catch (e) {
       console.error("memory: failed to spool turns", e);
@@ -854,6 +946,14 @@ export default function (pi: ExtensionAPI) {
     for (const name of names.sort()) {
       if (name.endsWith(".failed")) continue;
       const path = join(SPOOL_DIR, name);
+      if (name.startsWith("pending-")) {
+        try {
+          const age = Date.now() - (await stat(path)).mtimeMs;
+          if (age < PENDING_SPOOL_STALE_MS) continue;
+        } catch {
+          continue; // finalized or removed concurrently
+        }
+      }
       try {
         const raw = await readFile(path, "utf8");
         if (raw.trim()) {
@@ -863,11 +963,13 @@ export default function (pi: ExtensionAPI) {
       } catch (e) {
         // a failing file must not block the files behind it
         console.error("memory: failed to drain spool file", name, e);
-        const spooledAt = Number(name.split("-", 1)[0]);
-        if (
-          Number.isFinite(spooledAt) &&
-          Date.now() - spooledAt > SPOOL_RETRY_WINDOW
-        ) {
+        let age: number | undefined;
+        try {
+          age = Date.now() - (await stat(path)).mtimeMs;
+        } catch {
+          continue;
+        }
+        if (age > SPOOL_RETRY_WINDOW) {
           try {
             await rename(path, `${path}.failed`);
           } catch (renameError) {
@@ -914,14 +1016,16 @@ export default function (pi: ExtensionAPI) {
     if (isMemoryDisabled(ctx)) return;
 
     turnBuffer.push(turn);
-    if (turnBuffer.length >= RETAIN_EVERY_N_TURNS && spoolBuffer(ctx)) {
-      enqueue(() => drainSpool(ctx));
+    if (turnBuffer.length >= RETAIN_EVERY_N_TURNS) {
+      if (finalizeBatch(ctx)) enqueue(() => drainSpool(ctx));
+    } else {
+      writePendingSpool();
     }
   });
 
   // Persist a short final batch; a later session drains it.
   pi.on("session_shutdown", (_event, ctx) => {
-    spoolBuffer(ctx);
+    finalizeBatch(ctx);
   });
 
   // Pick up what earlier sessions left behind, off the startup path.
@@ -943,8 +1047,7 @@ export default function (pi: ExtensionAPI) {
       const results = (await sedimentStore.search(key, AUTO_RECALL_LIMIT * 3))
         .filter(
           (r) =>
-            r.content.startsWith("[") &&
-            rawSimilarity(r) >= MIN_SIMILARITY,
+            r.content.startsWith("[") && rawSimilarity(r) >= MIN_SIMILARITY,
         )
         .slice(0, AUTO_RECALL_LIMIT);
       if (results.length === 0) return;
@@ -1055,6 +1158,101 @@ export default function (pi: ExtensionAPI) {
         const msg = e instanceof Error ? e.message : String(e);
         return {
           content: [{ type: "text", text: `Memory search failed: ${msg}` }],
+          details: { error: msg },
+        };
+      }
+    },
+  });
+
+  // Explicit store tool: a deliberate "remember this" bypasses the
+  // batched extraction pipeline and lands immediately, with the same
+  // rendering and supersession as extracted facts.
+  pi.registerTool({
+    name: "memory_store",
+    label: "Memory Store",
+    description:
+      "Store one durable item in long-term memory immediately. Use for " +
+      "information the user explicitly asks to remember.",
+    promptGuidelines: [
+      "Store a memory when the user explicitly asks to remember, note, or " +
+        "not forget something. Do not store transient task state, secrets, " +
+        "or information the user did not ask to keep.",
+    ],
+    parameters: Type.Object({
+      kind: Type.String({
+        description:
+          "One of: fact (stable fact about the user or environment), " +
+          "pref (preference or convention), id (exact identifier, URL, or " +
+          "handle), howto (working one-line command), todo (open task)",
+      }),
+      subject: Type.String({
+        description:
+          "Stable lowercase key of 2-6 words; a later store with the same " +
+          "subject supersedes this one",
+      }),
+      body: Type.String({
+        description: "One concise sentence, exact identifier, or command",
+      }),
+    }),
+
+    async execute(
+      _toolCallId,
+      params: { kind: string; subject: string; body: string },
+      _signal,
+      _onUpdate,
+      ctx,
+    ) {
+      if (isMemoryDisabled(ctx)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Memory is disabled for this session. Use /memory on to re-enable.",
+            },
+          ],
+          details: { disabled: true },
+        };
+      }
+      const kind = params.kind.trim().toLowerCase() as Kind;
+      if (!(KINDS as readonly string[]).includes(kind)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Invalid kind "${params.kind}". Use one of: ${KINDS.join(", ")}.`,
+            },
+          ],
+          details: { error: "invalid kind" },
+        };
+      }
+      const fact: Fact = {
+        kind,
+        subject: params.subject.trim().toLowerCase(),
+        body: params.body.trim(),
+      };
+      if (!fact.subject || !fact.body) {
+        return {
+          content: [
+            { type: "text", text: "Subject and body must be non-empty." },
+          ],
+          details: { error: "empty field" },
+        };
+      }
+      try {
+        await sedimentStore.storeFacts([fact]);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Stored: [${fact.kind}] ${fact.subject}: ${fact.body}`,
+            },
+          ],
+          details: { fact },
+        };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return {
+          content: [{ type: "text", text: `Memory store failed: ${msg}` }],
           details: { error: msg },
         };
       }
