@@ -26,7 +26,7 @@ import { complete } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
 import { execFile } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -87,6 +87,13 @@ const MEMORY_SEPARATOR = "\n\n---\n\n";
 const SPOOL_DIR = join(dirname(SEDIMENT_DB), "spool");
 
 /**
+ * A spool file still failing after this long is quarantined (renamed to
+ * `.failed`) so one poison file cannot retry at every session start
+ * forever.
+ */
+const SPOOL_RETRY_WINDOW = 7 * 24 * 60 * 60 * 1000;
+
+/**
  * Extraction runs once per this many settled turns instead of every
  * turn. Buffered turns are flushed early on session_shutdown so a chat
  * that ends before the boundary still captures its facts. Mirrors
@@ -139,6 +146,10 @@ export interface ExtractionRequest {
 
 function cleanEvidenceText(text: string): string {
   return text
+    // pi injects skill instructions into the same user text part as the
+    // prompt; without stripping, the extractor cites skill boilerplate
+    // as user-stated facts
+    .replace(/<skill [^>]*>[\s\S]*?<\/skill>/g, "[skill elided]")
     .replace(/\/nix\/store\/[a-z0-9]{32}-/g, "<nix>/")
     .replaceAll("</source_records>", "[escaped source_records close]")
     .replace(/\n{3,}/g, "\n\n")
@@ -510,7 +521,20 @@ export function prepareSpoolExtraction(raw: string): ExtractionRequest {
 export interface RecallResult {
   content: string;
   id: string;
+  /** Ranking score with sediment's recency/access boost applied. */
   similarity: string;
+  /** Plain cosine similarity; absent on older sediment versions. */
+  raw_similarity?: string;
+}
+
+/**
+ * Thresholds are tuned on cosine similarity. The boosted score runs
+ * ~0.2 higher (measured 0.83 boosted vs 0.64 raw for a loosely related
+ * hit), which made supersession replace unrelated same-kind facts and
+ * made the recall floor a no-op.
+ */
+function rawSimilarity(result: RecallResult): number {
+  return parseFloat(result.raw_similarity ?? result.similarity);
 }
 
 const MEMORY_SEARCH_WARNING =
@@ -593,7 +617,7 @@ class SedimentStore {
         (result) =>
           result.content.startsWith(prefix) ||
           (result.content.startsWith(`[${fact.kind}] `) &&
-            parseFloat(result.similarity) >= SUPERSEDE_SIMILARITY),
+            rawSimilarity(result) >= SUPERSEDE_SIMILARITY),
       );
       replace = hit?.id;
     } catch {
@@ -828,6 +852,7 @@ export default function (pi: ExtensionAPI) {
       return;
     }
     for (const name of names.sort()) {
+      if (name.endsWith(".failed")) continue;
       const path = join(SPOOL_DIR, name);
       try {
         const raw = await readFile(path, "utf8");
@@ -836,8 +861,23 @@ export default function (pi: ExtensionAPI) {
         }
         await rm(path, { force: true });
       } catch (e) {
+        // a failing file must not block the files behind it
         console.error("memory: failed to drain spool file", name, e);
-        return;
+        const spooledAt = Number(name.split("-", 1)[0]);
+        if (
+          Number.isFinite(spooledAt) &&
+          Date.now() - spooledAt > SPOOL_RETRY_WINDOW
+        ) {
+          try {
+            await rename(path, `${path}.failed`);
+          } catch (renameError) {
+            console.error(
+              "memory: failed to quarantine spool file",
+              name,
+              renameError,
+            );
+          }
+        }
       }
     }
   }
@@ -904,7 +944,7 @@ export default function (pi: ExtensionAPI) {
         .filter(
           (r) =>
             r.content.startsWith("[") &&
-            parseFloat(r.similarity) >= MIN_SIMILARITY,
+            rawSimilarity(r) >= MIN_SIMILARITY,
         )
         .slice(0, AUTO_RECALL_LIMIT);
       if (results.length === 0) return;
