@@ -71,6 +71,8 @@ in
       ++ lib.concatMap (name: resourcePackages.skills.${name} or [ ]) cfg.skills
     );
 
+    programs.git.ignores = lib.optional (builtins.elem "sediment-memory" cfg.extensions) ".sediment/";
+
     home.file =
       resourceEntries ".pi/agent/extensions" (self + "/extensions") cfg.extensions
       # deployed from a build that pins the sediment store path, not from
