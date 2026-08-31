@@ -40,7 +40,7 @@ Failed extraction jobs remain in the spool. A later session retries them. Succes
 
 ## Recall
 
-Before each agent prompt, the extension searches Sediment from the recent user context. It injects at most three results above the similarity threshold into the system prompt.
+Before each agent prompt, the extension searches Sediment. The query blends the prompt with the last three settled turns, so a terse prompt still recalls against the conversation topic; injected skill blocks are stripped first. It injects at most three results above the similarity threshold into the system prompt.
 
 Recalled content is marked as untrusted historical data. The agent must not follow instructions contained in a memory.
 
@@ -64,6 +64,14 @@ The `memory_store` tool stores one item immediately, bypassing batched extractio
 ```
 
 A later store with the same subject supersedes the earlier item.
+
+The `memory_forget` tool deletes one item by the id shown in `memory_search` results, for memories the user declares wrong or outdated:
+
+```json
+{
+  "id": "eb52a1d4-e7a0-4e0a-957b-b58ad30ffce1"
+}
+```
 
 ## Session control
 

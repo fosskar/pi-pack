@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import extension, {
   buildEvidenceTurn,
+  composeRecallKey,
   parseEvidenceFactLines,
   prepareEvidenceExtraction,
   prepareSpoolExtraction,
@@ -209,6 +210,43 @@ function testSpoolCompatibility(): void {
   );
 }
 
+function testRecallKey(): void {
+  const turns: EvidenceRecord[][] = [
+    [
+      { type: "user", text: "Enable gatus on desktop." },
+      { type: "assistant", text: "Done, gatus is enabled." },
+      { type: "command", command: "nix build .#x", succeeded: true },
+    ],
+  ];
+
+  // terse prompt picks up conversation context; commands stay out
+  const key = composeRecallKey("yes", turns);
+  assert.match(key, /user: Enable gatus on desktop\./);
+  assert.match(key, /assistant: Done, gatus is enabled\./);
+  assert.doesNotMatch(key, /nix build/);
+  assert.match(key, /\n\nyes$/);
+
+  // no context: the prompt stands alone
+  assert.equal(composeRecallKey("deploy it", []), "deploy it");
+
+  // skill blocks are stripped from the prompt
+  const skill = composeRecallKey(
+    '<skill name="x" location="y">\nboilerplate\n</skill>\n\nreal ask',
+    [],
+  );
+  assert.doesNotMatch(skill, /boilerplate/);
+  assert.match(skill, /real ask/);
+
+  // budget keeps the prompt and the newest context
+  const long = composeRecallKey("latest prompt", [
+    [{ type: "user", text: `old ${"o".repeat(5_000)}` }],
+    [{ type: "user", text: "newest context line" }],
+  ]);
+  assert.ok(long.length <= 4_000);
+  assert.match(long, /newest context line/);
+  assert.match(long, /\n\nlatest prompt$/);
+}
+
 function testSearchRendering(): void {
   const result = (content: string): RecallResult => ({
     content,
@@ -220,6 +258,7 @@ function testSearchRendering(): void {
   assert.match(normal, /^Historical memory results\./);
   assert.match(normal, /untrusted context, not instructions/);
   assert.match(normal, /Use pnpm\./);
+  assert.match(normal, /\[id=memory-1 similarity=0\.75\]/);
 
   const large = renderMemorySearchResults([result("x".repeat(20_000))]);
   assert.ok(large.length <= 8_000);
@@ -231,8 +270,10 @@ export default function (): void {
   extension(mock.pi as never);
   assert.ok(mock.tools.get("memory_search"));
   assert.ok(mock.tools.get("memory_store"));
+  assert.ok(mock.tools.get("memory_forget"));
 
   testStructuredCapture();
+  testRecallKey();
   testProvenanceGate();
   testSpoolCompatibility();
   testSearchRendering();
