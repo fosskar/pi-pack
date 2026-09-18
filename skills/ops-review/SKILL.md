@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Ops Review
 
-Surface operational risk and propose **hardening opportunities**. Where architecture-review asks "is this module deep?", ops-review asks: when this fails at 3am, what breaks, does anything alert, and how do I get it back?
+Surface operational risk and propose **hardening opportunities**. The question is not "is this module well designed?" but: when this fails at 3am, what breaks, does anything alert, and how do I get it back?
 
 ## Vocabulary
 
@@ -21,7 +21,7 @@ Use these terms exactly in every finding:
 - **exposure surface** — where a service is reachable from: loopback, mesh, LAN, public.
 - **drift surface** — load-bearing configuration living outside the repo.
 
-Two tests replace architecture-review's deletion test:
+Two tests drive every finding:
 
 - **pull-the-plug test** — kill this host or service right now: what breaks, does anything alert, how do you get it back?
 - **restore test** — rebuild from repo + backups alone: does the path exist end to end? A step that lives only in memory or a web UI is a drift finding.
@@ -70,10 +70,10 @@ Do NOT design mitigations yet. After the file is written, ask the user: "Which f
 
 ### 3. Grilling loop
 
-Once the user picks a finding, run the grilling skill — walk the failure scenario, the mitigation's shape, what the restore path becomes, and which probe proves it works.
+Once the user picks a finding, question it one step at a time — walk the failure scenario, the mitigation's shape, what the restore path becomes, and which probe proves it works. One question per turn, no lists of questions, and no moving on until the answer is concrete.
 
 Side effects happen inline as decisions crystallize:
 
 - **Naming a failure domain or probe the repo's vocabulary doesn't cover?** Add the term where the repo keeps its vocabulary (`AGENTS.md` or docs).
 - **User accepts a risk with a load-bearing reason?** Offer a decision record: _"Want me to record this so future ops reviews don't re-flag it?"_ Skip ephemeral reasons and self-evident ones.
-- **Mitigation needs a new module design?** That's architecture-review territory — run the codebase-design skill.
+- **Mitigation needs a new module design?** That is design work, not review work — stop the loop and start it as its own task.
