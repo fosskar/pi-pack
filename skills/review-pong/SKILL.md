@@ -10,7 +10,7 @@ A code review, then an adversarial loop: a **critic** in a **fresh context** att
 
 ## 1. Review
 
-Run the code-review skill against the fixed point the user named. If the conversation already holds a fresh review, reuse it. Number the findings.
+Review the changes since the fixed point the user named against the repo's documented standards. If a code review skill is available, run it; otherwise read the diff and the standards sources yourself. If the conversation already holds a fresh review, reuse it. Number the findings.
 
 ## 2. Pick the critic
 
