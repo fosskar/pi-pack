@@ -28,6 +28,7 @@ let
     extensions.sediment-memory = [ cfg.package.sediment ];
     skills.osm = [ cfg.package.osm-cli ];
     skills.paperless = [ cfg.package.paperless-cli ];
+    skills.security-audit = [ pkgs.nodejs ];
   };
 in
 {
