@@ -58,7 +58,7 @@ Use `nix flake check` as the normal test entry point because the repository has 
 - Reconstruct persistent state from session entries when an extension reloads.
 - Keep each extension README accurate when its interface, configuration, lifecycle, or safety behavior changes.
 
-Match the existing extension before adding an abstraction. `btw` and `sediment-memory` contain stateful examples. `clipboard` and `pi-to-PI` contain minimal examples.
+Match the existing extension before adding an abstraction. `sediment-memory` contains a stateful example. `clipboard` and `pi-to-PI` contain minimal examples.
 
 ## test conventions
 

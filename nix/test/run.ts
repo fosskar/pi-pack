@@ -1,4 +1,3 @@
-import btwTest from "../../extensions/btw/test/btw.test.ts";
 import clipboardTest from "../../extensions/clipboard/test/clipboard.test.ts";
 import herdrSessionNameTest from "../../extensions/herdr-session-name/test/herdr-session-name.test.ts";
 import llmWikiTest from "../../extensions/llm-wiki/test/llm-wiki.test.ts";
@@ -8,7 +7,6 @@ import sedimentMemoryTest from "../../extensions/sediment-memory/test/sediment-m
 import sketchTest from "../../extensions/sketch/test/sketch.test.ts";
 
 await sedimentMemoryTest();
-await btwTest();
 await clipboardTest();
 await herdrSessionNameTest();
 await llmWikiTest();
