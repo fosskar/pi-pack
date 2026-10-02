@@ -62,7 +62,7 @@ export default async function (): Promise<void> {
     );
     assert.deepEqual(
       requests.map((request) => request.params.display_agent),
-      ["π nixfiles", "π fix herdr labels", "π nixfiles"],
+      ["𜵨▚ nixfiles", "𜵨▚ fix herdr labels", "𜵨▚ nixfiles"],
     );
     const [first, second] = requests.map((request) => request.params);
     assert.equal(first.pane_id, "w1:p1");
