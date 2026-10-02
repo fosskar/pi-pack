@@ -1,5 +1,4 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { complete } from "@earendil-works/pi-ai";
 
 import type { ExtractionRequest, Fact } from "./evidence.ts";
 
@@ -14,8 +13,7 @@ export async function extractFacts(
   const model = ctx.model;
   if (!model) throw new Error("no active model");
 
-  const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
-  if (!auth.ok || !auth.apiKey) {
+  if (!ctx.modelRegistry.hasConfiguredAuth(model)) {
     throw new Error("model authentication unavailable");
   }
 
@@ -24,7 +22,7 @@ export async function extractFacts(
     : AbortSignal.timeout(EXTRACT_TIMEOUT);
 
   try {
-    const response = await complete(
+    const response = await ctx.modelRegistry.complete(
       model,
       {
         messages: [
@@ -41,8 +39,6 @@ export async function extractFacts(
         ],
       },
       {
-        apiKey: auth.apiKey,
-        headers: auth.headers,
         maxTokens: 512,
         signal: deadline,
       },
