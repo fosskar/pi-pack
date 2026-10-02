@@ -4,6 +4,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const SOURCE = "pi-pack:herdr-session-name";
 const TIMEOUT_MS = 2000;
+// the 4x4 pixel pi logo: U+1CD68 BLOCK OCTANT-123567 + U+259A, needs
+// a terminal that renders unicode 16 octants
+const LOGO = "\u{1CD68}\u259A";
 
 function herdrRequest(
   socketPath: string,
@@ -54,7 +57,7 @@ export default function (pi: ExtensionAPI) {
       pane_id: paneId,
       source: SOURCE,
       agent: "pi",
-      display_agent: `π ${sessionName || path.basename(cwd)}`,
+      display_agent: `${LOGO} ${sessionName || path.basename(cwd)}`,
       seq: ++seq,
     });
 
