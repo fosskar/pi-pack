@@ -14,13 +14,7 @@
  */
 
 import { Type } from "typebox";
-import {
-  complete,
-  type Api,
-  type Message,
-  type UserMessage,
-  type Model,
-} from "@earendil-works/pi-ai";
+import type { Api, Message, UserMessage, Model } from "@earendil-works/pi-ai";
 import type {
   ExtensionAPI,
   ExtensionContext,
@@ -36,8 +30,6 @@ interface AvailableModel {
   modelId: string;
   name: string;
   model: Model<Api>;
-  apiKey?: string;
-  headers?: Record<string, string>;
 }
 
 interface Theme {
@@ -142,44 +134,7 @@ function serializeConversation(messages: Message[]): string {
   return parts.join("\n\n");
 }
 
-type ModelAuth =
-  | { ok: true; apiKey?: string; headers?: Record<string, string> }
-  | { ok: false; error: string };
-
-async function resolveModelAuth(
-  ctx: ExtensionContext,
-  model: Model<Api>,
-): Promise<ModelAuth> {
-  const registry = ctx.modelRegistry as unknown as {
-    getApiKeyAndHeaders?: (model: Model<Api>) => Promise<ModelAuth>;
-    getApiKey?: (model: Model<Api>) => Promise<string | undefined>;
-  };
-
-  if (registry.getApiKeyAndHeaders) {
-    return registry.getApiKeyAndHeaders(model);
-  }
-  if (registry.getApiKey) {
-    try {
-      return {
-        ok: true,
-        apiKey: await registry.getApiKey(model),
-        headers: (model as Model<Api> & { headers?: Record<string, string> })
-          .headers,
-      };
-    } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }
-
-  return { ok: false, error: "Model registry cannot resolve credentials." };
-}
-
-async function getAvailableModels(
-  ctx: ExtensionContext,
-): Promise<AvailableModel[]> {
+function getAvailableModels(ctx: ExtensionContext): AvailableModel[] {
   const models: AvailableModel[] = [];
   const available = ctx.modelRegistry.getAvailable();
 
@@ -187,16 +142,11 @@ async function getAvailableModels(
     // skip current model — we want a different opinion
     if (ctx.model && model.id === ctx.model.id) continue;
 
-    const auth = await resolveModelAuth(ctx, model);
-    if (!auth.ok) continue;
-
     models.push({
       provider: model.provider,
       modelId: model.id,
       name: model.name ?? model.id,
       model,
-      apiKey: auth.apiKey,
-      headers: auth.headers,
     });
   }
 
@@ -271,6 +221,7 @@ async function buildFullPrompt(
 
 /** One query. Throws on failure — callers surface the message. */
 async function queryModel(
+  ctx: ExtensionContext,
   model: AvailableModel,
   fullPrompt: string,
   signal?: AbortSignal,
@@ -281,10 +232,10 @@ async function queryModel(
     timestamp: Date.now(),
   };
 
-  const response = await complete(
+  const response = await ctx.modelRegistry.complete(
     model.model,
     { systemPrompt: SYSTEM_PROMPT, messages: [userMessage] },
-    { apiKey: model.apiKey, headers: model.headers, signal },
+    { signal },
   );
 
   if (response.stopReason === "aborted") return null;
@@ -340,7 +291,7 @@ export default function (pi: ExtensionAPI) {
         include_context?: boolean;
       };
 
-      const availableModels = await getAvailableModels(ctx);
+      const availableModels = getAvailableModels(ctx);
       if (availableModels.length === 0) {
         return {
           content: [
@@ -377,7 +328,7 @@ export default function (pi: ExtensionAPI) {
       );
 
       try {
-        const result = await queryModel(model, fullPrompt, signal);
+        const result = await queryModel(ctx, model, fullPrompt, signal);
         if (result === null) {
           return {
             content: [{ type: "text", text: "aborted" }],
@@ -412,7 +363,7 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const availableModels = await getAvailableModels(ctx);
+      const availableModels = getAvailableModels(ctx);
 
       if (availableModels.length === 0) {
         ctx.ui.notify(
@@ -500,7 +451,7 @@ export default function (pi: ExtensionAPI) {
     );
     text += message.content;
 
-    if (expanded && details.files?.length > 0) {
+    if (expanded && details.files && details.files.length > 0) {
       text += "\n\n" + theme.fg("dim", `Files: ${details.files.join(", ")}`);
     }
 
@@ -523,7 +474,7 @@ async function executeOracleCommand(
     const loader = new BorderedLoader(tui, theme, `🔮 Asking ${model.name}...`);
     loader.onAbort = () => done(null);
 
-    queryModel(model, fullPrompt, loader.signal)
+    queryModel(ctx, model, fullPrompt, loader.signal)
       .then(done)
       .catch((err) => {
         failure = err instanceof Error ? err.message : String(err);
@@ -571,7 +522,7 @@ async function executeOracleCommand(
         prompt,
       },
     });
-    ctx.ui.notify("oracle response added to context", "success");
+    ctx.ui.notify("oracle response added to context", "info");
   } else {
     ctx.ui.notify("oracle response discarded", "info");
   }
