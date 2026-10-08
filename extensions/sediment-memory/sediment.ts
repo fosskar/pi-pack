@@ -202,7 +202,9 @@ export class SedimentStore {
       console.error("memory: consolidate failed", error);
     }
     try {
-      await this.command(["compact", "--force"], {
+      // --force deletes unreferenced files of any age, which destroys data
+      // written by a concurrent pi session's in-flight compaction
+      await this.command(["compact"], {
         timeout: COMPACT_TIMEOUT,
       });
     } catch (error) {
