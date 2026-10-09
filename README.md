@@ -89,10 +89,11 @@ Home Manager can deploy one skill for another agent:
 
 Set `"theme": "<name>"` in `settings.json`.
 
-| theme                                | description                           |
-| ------------------------------------ | ------------------------------------- |
-| [grey-amber](themes/grey-amber.json) | A dark grey theme with amber accents. |
-| [grey-teal](themes/grey-teal.json)   | A dark grey theme with teal accents.  |
+| theme                                | description                              |
+| ------------------------------------ | ---------------------------------------- |
+| [grey-amber](themes/grey-amber.json) | A dark grey theme with amber accents.    |
+| [grey-teal](themes/grey-teal.json)   | A dark grey theme with teal accents.     |
+| [pi-pi](themes/pi-pi.json)           | A dark grey theme in the Pi logo colors. |
 
 ## Develop
 

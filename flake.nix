@@ -211,7 +211,8 @@
                     --no-extensions "''${extensions[@]}" --no-skills \
                     --no-prompt-templates --no-themes \
                     --theme "$PWD/themes/grey-amber.json" \
-                    --theme "$PWD/themes/grey-teal.json" --use-theme grey-teal \
+                    --theme "$PWD/themes/grey-teal.json" \
+                    --theme "$PWD/themes/pi-pi.json" --use-theme grey-teal \
                     --no-context-files > "$TMPDIR/pi-rpc.jsonl"
 
               grep -q '"id":"smoke".*"success":true' "$TMPDIR/pi-rpc.jsonl"

@@ -74,7 +74,7 @@ Skill directories use kebab-case. Each `SKILL.md` starts with `name` and `descri
 
 Prompt templates use Markdown with `description` frontmatter. Use `argument-hint` when the prompt accepts arguments. Keep positional argument syntax compatible with Pi prompt templates.
 
-Theme files contain a unique `name`, reusable `vars`, and the complete Pi `colors` map. Keep the `$schema` field. Validate both theme files through the `pi-compatibility` check.
+Theme files contain a unique `name`, reusable `vars`, and the complete Pi `colors` map. Keep the `$schema` field. Validate every theme file through the `pi-compatibility` check.
 
 ## nix conventions
 
