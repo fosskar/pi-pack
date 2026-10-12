@@ -26,6 +26,7 @@ let
   resourcePackages = {
     extensions.llm-wiki = [ pkgs.git ];
     extensions.sediment-memory = [ cfg.package.sediment ];
+    skills.ai-tells = [ cfg.package.ai-tells ];
     skills.osm = [ cfg.package.osm-cli ];
     skills.paperless = [ cfg.package.paperless-cli ];
     skills.security-audit = [ pkgs.nodejs ];

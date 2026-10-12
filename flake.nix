@@ -72,6 +72,7 @@
       sedimentMemoryPackage =
         pkgs:
         pkgs.callPackage ./nix/packages/sediment-memory/package.nix { sediment = sedimentPackage pkgs; };
+      aiTellsPackage = pkgs: pkgs.callPackage ./skills/ai-tells { };
       osmCliPackage = pkgs: pkgs.callPackage ./skills/osm { };
       paperlessCliPackage = pkgs: pkgs.callPackage ./skills/paperless { };
 
@@ -105,6 +106,12 @@
                       builtins.elem "sediment-memory" selectedExtensions
                       == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.sediment config.home.packages;
                     message = "Sediment installation must follow sediment-memory selection";
+                  }
+                  {
+                    assertion =
+                      builtins.elem "ai-tells" selectedSkills
+                      == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.ai-tells config.home.packages;
+                    message = "ai-tells installation must follow ai-tells skill selection";
                   }
                   {
                     assertion =
@@ -151,6 +158,7 @@
     {
       packages = eachSystem (pkgs: {
         default = package pkgs;
+        ai-tells = aiTellsPackage pkgs;
         osm-cli = osmCliPackage pkgs;
         paperless-cli = paperlessCliPackage pkgs;
         sediment = sedimentPackage pkgs;
@@ -159,6 +167,7 @@
 
       checks = eachSystem (pkgs: {
         package = package pkgs;
+        ai-tells = aiTellsPackage pkgs;
         osm-cli = osmCliPackage pkgs;
         paperless-cli = paperlessCliPackage pkgs;
         sediment = sedimentPackage pkgs;
@@ -169,6 +178,9 @@
           .activationPackage;
         home-manager-no-wiki =
           (homeConfiguration pkgs (builtins.filter (name: name != "llm-wiki") extensions) skills)
+          .activationPackage;
+        home-manager-no-ai-tells =
+          (homeConfiguration pkgs extensions (builtins.filter (name: name != "ai-tells") skills))
           .activationPackage;
         home-manager-no-osm =
           (homeConfiguration pkgs extensions (builtins.filter (name: name != "osm") skills))
