@@ -94,6 +94,7 @@ Set `"theme": "<name>"` in `settings.json`.
 | ------------------------------------ | ---------------------------------------- |
 | [grey-amber](themes/grey-amber.json) | A dark grey theme with amber accents.    |
 | [grey-teal](themes/grey-teal.json)   | A dark grey theme with teal accents.     |
+| [pi-jade](themes/pi-jade.json)       | A pale grey theme with jade accents.     |
 | [pi-pi](themes/pi-pi.json)           | A dark grey theme in the Pi logo colors. |
 
 ## Develop

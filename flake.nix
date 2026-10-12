@@ -224,6 +224,7 @@
                     --no-prompt-templates --no-themes \
                     --theme "$PWD/themes/grey-amber.json" \
                     --theme "$PWD/themes/grey-teal.json" \
+                    --theme "$PWD/themes/pi-jade.json" \
                     --theme "$PWD/themes/pi-pi.json" --use-theme grey-teal \
                     --no-context-files > "$TMPDIR/pi-rpc.jsonl"
 
