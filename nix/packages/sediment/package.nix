@@ -22,6 +22,7 @@ rustPlatform.buildRustPackage rec {
   patches = [
     ./central-project-config.patch
     ./consolidate-subcommand.patch
+    ./project-id-override.patch
   ];
 
   cargoHash = "sha256-NfXChnMYyNyyT3ocdT65Ic6Iu3Zp0LtuTR/Je8FzqZc=";

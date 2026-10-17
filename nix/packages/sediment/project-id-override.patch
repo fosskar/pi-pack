@@ -1,0 +1,68 @@
+diff --git i/src/main.rs w/src/main.rs
+index 66f2d8d..ddc7c74 100644
+--- i/src/main.rs
++++ w/src/main.rs
+@@ -114,6 +114,9 @@ enum Commands {
+         #[arg(long, default_value_t = 100)]
+         max_batches: usize,
+     },
++
++    /// Print the project ID derived from the current directory
++    Project,
+ }
+ 
+ fn main() -> Result<()> {
+@@ -155,6 +158,7 @@ fn main() -> Result<()> {
+         Some(Commands::Consolidate { max_batches }) => {
+             run_consolidate(cli.db, max_batches, cli.json)
+         }
++        Some(Commands::Project) => run_project(cli.db, cli.json),
+     }
+ }
+ 
+@@ -475,13 +479,20 @@ fn cli_context(db_override: Option<PathBuf>) -> CliContext {
+     let sediment_dir = db_path.parent().unwrap_or(&db_path);
+     let access_db_path = sediment_dir.join("access.db");
+ 
+-    let cwd = std::env::current_dir().ok();
+-    let project_root = cwd
+-        .as_deref()
+-        .map(|dir| sediment::find_project_root(dir).unwrap_or_else(|| dir.to_path_buf()));
+-    let project_id = project_root
+-        .as_ref()
+-        .and_then(|root| sediment::get_or_create_project_id(root).ok());
++    // a caller that resolved the project earlier can act on it after the
++    // project directory is gone; an empty value forces global context
++    let project_id = match std::env::var("SEDIMENT_PROJECT_ID") {
++        Ok(id) => Some(id).filter(|id| !id.is_empty()),
++        Err(_) => {
++            let cwd = std::env::current_dir().ok();
++            let project_root = cwd
++                .as_deref()
++                .map(|dir| sediment::find_project_root(dir).unwrap_or_else(|| dir.to_path_buf()));
++            project_root
++                .as_ref()
++                .and_then(|root| sediment::get_or_create_project_id(root).ok())
++        }
++    };
+ 
+     CliContext {
+         db_path,
+@@ -490,6 +501,17 @@ fn cli_context(db_override: Option<PathBuf>) -> CliContext {
+     }
+ }
+ 
++/// Print the project ID that project-scoped commands would use.
++fn run_project(db_override: Option<PathBuf>, output_json: bool) -> Result<()> {
++    let ctx = cli_context(db_override);
++    if output_json {
++        println!("{}", json!({ "project_id": ctx.project_id }));
++    } else if let Some(id) = ctx.project_id {
++        println!("{id}");
++    }
++    Ok(())
++}
++
+ /// List stored items
+ fn run_list(
+     db_override: Option<PathBuf>,
