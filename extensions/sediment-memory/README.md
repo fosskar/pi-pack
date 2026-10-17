@@ -25,7 +25,9 @@ The parent `sediment/` directory also contains access data and the durable extra
 
 The extension collects settled conversation turns. Every settled turn is mirrored to a pending spool file, so a crash loses at most the turn in flight. Every four turns the pending batch becomes a durable spool job and background extraction starts. Session shutdown flushes a shorter pending batch; a pending file orphaned by a dead session is drained after one hour.
 
-Each batch records its originating working directory and carries the last two turns of the previous batch as context-only records: the extractor can resolve references across the batch boundary but cannot cite them as evidence, so re-seen turns produce no duplicate facts.
+Each batch records its originating working directory and the Sediment project id of that directory, resolved when the extension first captures a turn there. Sediment derives a Git project's id from the root commit, so worktrees of one repository share an id. Project-scoped facts are stored under the recorded id, so a batch captured in a worktree that is deleted before extraction still lands in its repository's project. A batch without a recorded id whose directory no longer exists cannot be attributed to a project; it is renamed to `.failed` without extraction.
+
+Each batch also carries the last two turns of the previous batch as context-only records: the extractor can resolve references across the batch boundary but cannot cite them as evidence, so re-seen turns produce no duplicate facts.
 
 Extraction keeps evidence-backed items such as:
 

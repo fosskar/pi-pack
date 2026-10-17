@@ -1,5 +1,11 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { readdir, readFile, rename, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -18,6 +24,7 @@ const PENDING_SPOOL_STALE_MS = 60 * 60 * 1000;
 
 interface SpoolQueueOptions {
   isDisabled(ctx: ExtensionContext): boolean;
+  resolveProject?(cwd: string): Promise<string | undefined>;
   extractAndStore(
     ctx: ExtensionContext,
     request: ExtractionRequest,
@@ -29,6 +36,7 @@ export class SpoolQueue {
   private turns: EvidenceRecord[][] = [];
   private overlap: EvidenceRecord[][] = [];
   private captureCwd: string | undefined;
+  private readonly projectIds = new Map<string, string | undefined>();
   private queued: Promise<void> = Promise.resolve();
 
   constructor(
@@ -41,6 +49,7 @@ export class SpoolQueue {
   addTurn(turn: EvidenceRecord[], ctx: ExtensionContext): void {
     if (this.options.isDisabled(ctx)) return;
     const cwd = ctx.sessionManager.getCwd();
+    this.resolveProject(cwd);
     if (this.captureCwd !== undefined && this.captureCwd !== cwd) {
       if (this.turns.length > 0) {
         if (!this.finalize(ctx)) {
@@ -107,7 +116,24 @@ export class SpoolQueue {
       try {
         const raw = await readFile(claimedPath, "utf8");
         if (raw.trim()) {
-          await this.options.extractAndStore(ctx, prepareSpoolExtraction(raw));
+          const request = prepareSpoolExtraction(raw);
+          // spools written before project ids were captured, or whose
+          // resolution failed, lose their project once the cwd is deleted
+          if (
+            request.projectId === undefined &&
+            request.cwd !== undefined &&
+            !existsSync(request.cwd)
+          ) {
+            console.error(
+              "memory: quarantined spool file",
+              name,
+              "project directory is gone:",
+              request.cwd,
+            );
+            await rename(claimedPath, `${canonicalPath}.failed`);
+            continue;
+          }
+          await this.options.extractAndStore(ctx, request);
         }
         await rm(claimedPath, { force: true });
       } catch (error) {
@@ -117,12 +143,31 @@ export class SpoolQueue {
     }
   }
 
+  /** Resolve once per cwd, while the directory still exists. */
+  private resolveProject(cwd: string): void {
+    const resolve = this.options.resolveProject;
+    if (!resolve || this.projectIds.has(cwd)) return;
+    this.projectIds.set(cwd, undefined);
+    resolve(cwd).then(
+      (id) => this.projectIds.set(cwd, id),
+      (error) => {
+        // drain falls back to the cwd while it exists
+        this.projectIds.delete(cwd);
+        console.error("memory: failed to resolve project", cwd, error);
+      },
+    );
+  }
+
   private render(): string {
     const spool: CaptureSpool = {
       version: 3,
       turns: this.turns,
       overlapTurns: this.overlap,
       cwd: this.captureCwd,
+      projectId:
+        this.captureCwd === undefined
+          ? undefined
+          : this.projectIds.get(this.captureCwd),
     };
     return JSON.stringify(spool);
   }
@@ -133,6 +178,7 @@ export class SpoolQueue {
       turns: [turn],
       overlapTurns: [],
       cwd,
+      projectId: this.projectIds.get(cwd),
     };
     try {
       this.writeAtomic(

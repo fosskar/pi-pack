@@ -210,6 +210,29 @@ function testSpoolCompatibility(): void {
     }),
   );
   assert.equal(scoped.cwd, "/tmp/project");
+  assert.equal(scoped.projectId, undefined);
+
+  const identified = prepareSpoolExtraction(
+    JSON.stringify({
+      version: 3,
+      cwd: "/tmp/deleted-worktree",
+      projectId: "root-commit",
+      turns: [[{ type: "user", text: "Use pnpm." }]],
+    }),
+  );
+  assert.equal(identified.projectId, "root-commit");
+  assert.throws(
+    () =>
+      prepareSpoolExtraction(
+        JSON.stringify({
+          version: 3,
+          cwd: "/tmp/project",
+          projectId: 1,
+          turns: [[{ type: "user", text: "Use pnpm." }]],
+        }),
+      ),
+    /invalid structured memory spool/,
+  );
   assert.deepEqual(
     scoped.parse("pref | project | package manager | Use pnpm. | evidence=u1"),
     [
@@ -521,6 +544,113 @@ async function testConcurrentSpoolClaim(): Promise<void> {
   }
 }
 
+async function testProjectIdentity(): Promise<void> {
+  const directory = await mkdtemp(join(tmpdir(), "sediment-spool-test-"));
+  const extracted: Array<{ cwd?: string; projectId?: string }> = [];
+  const queue = new SpoolQueue(
+    {
+      isDisabled: () => false,
+      resolveProject: async (cwd) => `id-of-${cwd}`,
+      extractAndStore: async (_ctx, request) => {
+        extracted.push({ cwd: request.cwd, projectId: request.projectId });
+      },
+    },
+    directory,
+  );
+  const ctx = {
+    sessionManager: { getCwd: () => directory },
+  } as never;
+  const originalConsoleError = console.error;
+
+  try {
+    // the project id is captured while the directory exists
+    queue.addTurn([{ type: "user", text: "Use pnpm." }], ctx);
+    await delay(10);
+    queue.addTurn([{ type: "user", text: "Use jq." }], ctx);
+    const pending = join(directory, `pending-${process.pid}.txt`);
+    assert.equal(
+      JSON.parse(await readFile(pending, "utf8")).projectId,
+      `id-of-${directory}`,
+    );
+    queue.finish(ctx);
+    await queue.drain(ctx);
+    assert.deepEqual(extracted, [
+      { cwd: directory, projectId: `id-of-${directory}` },
+    ]);
+
+    // a deleted worktree without a captured id cannot be attributed
+    const orphan = join(directory, "3000-1.txt");
+    await writeFile(
+      orphan,
+      JSON.stringify({
+        version: 3,
+        cwd: join(directory, "deleted-worktree"),
+        turns: [[{ type: "user", text: "Use pnpm." }]],
+      }),
+    );
+    console.error = () => {};
+    await queue.drain(ctx);
+    assert.equal(extracted.length, 1);
+    assert.deepEqual(await readdir(directory), ["3000-1.txt.failed"]);
+  } finally {
+    console.error = originalConsoleError;
+    await rm(directory, { recursive: true, force: true });
+  }
+
+  const calls: Array<{
+    args: string[];
+    cwd?: string;
+    projectId?: string;
+  }> = [];
+  const store = sedimentStore as unknown as {
+    run: (
+      args: string[],
+      options: { cwd?: string; projectId?: string },
+    ) => Promise<{ code: number; stdout: string; stderr: string }>;
+  };
+  const originalRun = store.run;
+  store.run = async (args, options) => {
+    calls.push({ args, cwd: options.cwd, projectId: options.projectId });
+    const stdout =
+      args[0] === "recall"
+        ? '{"results":[]}'
+        : args[0] === "list"
+          ? '{"items":[]}'
+          : args[0] === "project"
+            ? '{"project_id":"root-commit"}'
+            : "";
+    return { code: 0, stdout, stderr: "" };
+  };
+  try {
+    assert.equal(await sedimentStore.projectId("/tmp/x"), "root-commit");
+    calls.length = 0;
+    await sedimentStore.storeFacts(
+      [
+        { kind: "fact", scope: "project", subject: "a", body: "b" },
+        { kind: "fact", scope: "global", subject: "c", body: "d" },
+      ],
+      "/tmp/deleted-worktree",
+      "root-commit",
+    );
+    const stores = calls.filter((call) => call.args[0] === "store");
+    assert.deepEqual(
+      stores.map(({ cwd, projectId }) => ({ cwd, projectId })),
+      [
+        { cwd: "/", projectId: "root-commit" },
+        { cwd: "/", projectId: undefined },
+      ],
+    );
+    assert.ok(
+      calls
+        .filter((call) => call.args[0] !== "store")
+        .slice(0, 2)
+        .every((call) => call.projectId === "root-commit" && call.cwd === "/"),
+    );
+  } finally {
+    store.run = originalRun;
+  }
+}
+
 export default async function (): Promise<void> {
   const mock = createMockPi();
   extension(mock.pi as never);
@@ -535,4 +665,5 @@ export default async function (): Promise<void> {
   testSearchRendering();
   await testRecallLifecycleAndToolBounds();
   await testConcurrentSpoolClaim();
+  await testProjectIdentity();
 }

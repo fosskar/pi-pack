@@ -111,6 +111,14 @@ export function renderMemorySearchResults(results: RecallResult[]): string {
   return output;
 }
 
+interface RunOptions {
+  signal?: AbortSignal;
+  timeout?: number;
+  cwd?: string;
+  /** Sediment project context; replaces detection from `cwd`. */
+  projectId?: string;
+}
+
 /**
  * Own sediment's process, storage, supersession, and maintenance rules.
  * Callers state memory operations and do not construct sediment commands.
@@ -123,17 +131,35 @@ export class SedimentStore {
     limit: number,
     signal?: AbortSignal,
     cwd = "/",
+    projectId?: string,
   ): Promise<RecallResult[]> {
     const raw = await this.command(
       ["recall", query, "--limit", String(limit), "--json"],
-      { signal, cwd },
+      { signal, cwd, projectId },
     );
     const parsed = JSON.parse(raw) as { results: RecallResult[] };
     return parsed.results;
   }
 
-  async storeFacts(facts: Fact[], cwd = "/"): Promise<void> {
-    for (const fact of facts) await this.storeFact(fact, cwd);
+  /**
+   * Resolve the project id Sediment derives from `cwd`. Git worktrees share
+   * the id of their repository because Sediment derives it from the root
+   * commit, so the id stays valid after the worktree is deleted.
+   * `project` comes from nix/packages/sediment/project-id-override.patch.
+   */
+  async projectId(cwd: string): Promise<string | undefined> {
+    const raw = await this.command(["project", "--json"], { cwd });
+    const parsed = JSON.parse(raw) as { project_id: string | null };
+    return parsed.project_id ?? undefined;
+  }
+
+  /** `projectId`, when given, replaces `cwd` as the project context. */
+  async storeFacts(
+    facts: Fact[],
+    cwd = "/",
+    projectId?: string,
+  ): Promise<void> {
+    for (const fact of facts) await this.storeFact(fact, cwd, projectId);
     if (facts.length > 0) await this.maintain();
   }
 
@@ -145,16 +171,22 @@ export class SedimentStore {
    * Replace an existing item with the same `[kind] subject:` prefix.
    * Sediment has no native key lookup, so semantic recall approximates it.
    */
-  private async storeFact(fact: Fact, originCwd: string): Promise<void> {
+  private async storeFact(
+    fact: Fact,
+    originCwd: string,
+    originProjectId: string | undefined,
+  ): Promise<void> {
     const rendered = `[${fact.kind}] ${fact.subject}: ${fact.body}`;
     const prefix = `[${fact.kind}] ${fact.subject}:`;
-    const cwd = fact.scope === "project" ? originCwd : "/";
+    const project = fact.scope === "project";
+    const projectId = project ? originProjectId : undefined;
+    const cwd = project && !projectId ? originCwd : "/";
 
     let replace: string | undefined;
     try {
       const [previous, scopedIds] = await Promise.all([
-        this.search(rendered, 12, undefined, cwd),
-        this.idsInScope(fact.scope, cwd),
+        this.search(rendered, 12, undefined, cwd, projectId),
+        this.idsInScope(fact.scope, cwd, projectId),
       ]);
       const hit = previous.find(
         (result) =>
@@ -170,16 +202,17 @@ export class SedimentStore {
 
     const args = ["store", rendered, "--scope", fact.scope];
     if (replace) args.push("--replace", replace);
-    await this.command(args, { cwd });
+    await this.command(args, { cwd, projectId });
   }
 
   private async idsInScope(
     scope: Fact["scope"],
     cwd: string,
+    projectId: string | undefined,
   ): Promise<Set<string>> {
     const raw = await this.command(
       ["list", "--scope", scope, "--limit", "10000", "--json"],
-      { cwd },
+      { cwd, projectId },
     );
     const parsed = JSON.parse(raw) as { items: Array<{ id: string }> };
     return new Set(parsed.items.map((item) => item.id));
@@ -214,7 +247,7 @@ export class SedimentStore {
 
   private async command(
     args: string[],
-    options: { signal?: AbortSignal; timeout?: number; cwd?: string } = {},
+    options: RunOptions = {},
   ): Promise<string> {
     const result = await this.run(args, options);
     if (result.code !== 0) {
@@ -230,7 +263,7 @@ export class SedimentStore {
    */
   private run(
     args: string[],
-    options: { signal?: AbortSignal; timeout?: number; cwd?: string },
+    options: RunOptions,
   ): Promise<{
     code: number;
     stdout: string;
@@ -242,7 +275,13 @@ export class SedimentStore {
         args,
         {
           cwd: options.cwd ?? "/",
-          env: { ...process.env, SEDIMENT_DB },
+          env: {
+            ...process.env,
+            SEDIMENT_DB,
+            ...(options.projectId
+              ? { SEDIMENT_PROJECT_ID: options.projectId }
+              : {}),
+          },
           timeout: options.timeout ?? SEDIMENT_TIMEOUT,
           signal: options.signal,
           maxBuffer: 8 * 1024 * 1024,

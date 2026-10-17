@@ -77,9 +77,14 @@ export default function (pi: ExtensionAPI) {
 
   const spool = new SpoolQueue({
     isDisabled: isMemoryDisabled,
+    resolveProject: (cwd) => sedimentStore.projectId(cwd),
     async extractAndStore(ctx, request: ExtractionRequest) {
       const facts = await extractFacts(ctx, request);
-      await sedimentStore.storeFacts(facts, request.cwd ?? "/");
+      await sedimentStore.storeFacts(
+        facts,
+        request.cwd ?? "/",
+        request.projectId,
+      );
     },
   });
 

@@ -22,6 +22,8 @@ export interface CaptureSpool {
   overlapTurns?: EvidenceRecord[][];
   /** v3: originating cwd used for project-scoped storage. */
   cwd?: string;
+  /** v3: Sediment project id of `cwd`, resolved while `cwd` existed. */
+  projectId?: string;
 }
 
 export interface EvidenceSource {
@@ -34,6 +36,7 @@ export interface ExtractionRequest {
   prompt: string;
   parse: (text: string) => Fact[];
   cwd?: string;
+  projectId?: string;
 }
 
 function cleanEvidenceText(text: string): string {
@@ -456,7 +459,9 @@ function parseCaptureSpool(raw: string): CaptureSpool | undefined {
       value.version === 3 &&
       (typeof value.cwd !== "string" ||
         value.cwd.trim() === "" ||
-        !isAbsolute(value.cwd))
+        !isAbsolute(value.cwd) ||
+        (value.projectId !== undefined &&
+          (typeof value.projectId !== "string" || value.projectId === "")))
     ) {
       return undefined;
     }
@@ -494,5 +499,6 @@ export function prepareSpoolExtraction(raw: string): ExtractionRequest {
         spool.version === 3 ? fact : { ...fact, scope: "global" },
       ),
     cwd: spool.version === 3 ? spool.cwd : undefined,
+    projectId: spool.version === 3 ? spool.projectId : undefined,
   };
 }
