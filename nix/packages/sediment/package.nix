@@ -3,6 +3,10 @@
   rustPlatform,
   fetchFromGitHub,
   protobuf,
+  pkg-config,
+  zstd,
+  oniguruma,
+  sqlite,
   nix-update-script,
 }:
 rustPlatform.buildRustPackage rec {
@@ -27,7 +31,16 @@ rustPlatform.buildRustPackage rec {
 
   cargoHash = "sha256-NfXChnMYyNyyT3ocdT65Ic6Iu3Zp0LtuTR/Je8FzqZc=";
 
-  nativeBuildInputs = [ protobuf ];
+  nativeBuildInputs = [
+    protobuf
+    pkg-config
+  ];
+
+  buildInputs = [
+    oniguruma
+    sqlite
+    zstd
+  ];
 
   env = {
     PROTOC = "${protobuf}/bin/protoc";
