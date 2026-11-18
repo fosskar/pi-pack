@@ -25,7 +25,6 @@ let
 
   resourcePackages = {
     extensions.llm-wiki = [ pkgs.git ];
-    extensions.sediment-memory = [ cfg.package.sediment ];
     skills.ai-tells = [ cfg.package.ai-tells ];
     skills.osm = [ cfg.package.osm-cli ];
     skills.paperless = [ cfg.package.paperless-cli ];
@@ -73,15 +72,8 @@ in
       ++ lib.concatMap (name: resourcePackages.skills.${name} or [ ]) cfg.skills
     );
 
-    programs.git.ignores = lib.optional (builtins.elem "sediment-memory" cfg.extensions) ".sediment/";
-
     home.file =
       resourceEntries ".pi/agent/extensions" (self + "/extensions") cfg.extensions
-      # deployed from a build that pins the sediment store path, not from
-      # raw source with the PATH fallback
-      // lib.optionalAttrs (builtins.elem "sediment-memory" cfg.extensions) {
-        ".pi/agent/extensions/sediment-memory".source = cfg.package.sediment-memory;
-      }
       // resourceEntries ".pi/agent/skills" (self + "/skills") cfg.skills
       // resourceEntries ".pi/agent/prompts" (self + "/prompts") cfg.prompts
       // resourceEntries ".pi/agent/themes" (self + "/themes") cfg.themes;

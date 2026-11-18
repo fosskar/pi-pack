@@ -68,10 +68,6 @@
           };
         };
 
-      sedimentPackage = pkgs: pkgs.callPackage ./nix/packages/sediment/package.nix { };
-      sedimentMemoryPackage =
-        pkgs:
-        pkgs.callPackage ./nix/packages/sediment-memory/package.nix { sediment = sedimentPackage pkgs; };
       aiTellsPackage = pkgs: pkgs.callPackage ./skills/ai-tells { };
       osmCliPackage = pkgs: pkgs.callPackage ./skills/osm { };
       paperlessCliPackage = pkgs: pkgs.callPackage ./skills/paperless { };
@@ -100,12 +96,6 @@
                     assertion =
                       builtins.elem "llm-wiki" selectedExtensions == builtins.elem pkgs.git config.home.packages;
                     message = "Git installation must follow llm-wiki selection";
-                  }
-                  {
-                    assertion =
-                      builtins.elem "sediment-memory" selectedExtensions
-                      == builtins.elem self.packages.${pkgs.stdenv.hostPlatform.system}.sediment config.home.packages;
-                    message = "Sediment installation must follow sediment-memory selection";
                   }
                   {
                     assertion =
@@ -161,8 +151,6 @@
         ai-tells = aiTellsPackage pkgs;
         osm-cli = osmCliPackage pkgs;
         paperless-cli = paperlessCliPackage pkgs;
-        sediment = sedimentPackage pkgs;
-        sediment-memory = sedimentMemoryPackage pkgs;
       });
 
       checks = eachSystem (pkgs: {
@@ -170,12 +158,7 @@
         ai-tells = aiTellsPackage pkgs;
         osm-cli = osmCliPackage pkgs;
         paperless-cli = paperlessCliPackage pkgs;
-        sediment = sedimentPackage pkgs;
-        sediment-memory = sedimentMemoryPackage pkgs;
         home-manager = (homeConfiguration pkgs extensions skills).activationPackage;
-        home-manager-no-memory =
-          (homeConfiguration pkgs (builtins.filter (name: name != "sediment-memory") extensions) skills)
-          .activationPackage;
         home-manager-no-wiki =
           (homeConfiguration pkgs (builtins.filter (name: name != "llm-wiki") extensions) skills)
           .activationPackage;

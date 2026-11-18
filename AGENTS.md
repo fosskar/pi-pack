@@ -15,7 +15,6 @@ pi-pack distributes Pi extensions, skills, prompt templates, and themes. Nix pac
 - `flake.nix`: resource discovery, package outputs, checks, and formatter configuration.
 - `nix/home-manager.nix`: `programs.pi-pack` options, resource links, and required packages.
 - `nix/test/`: Bun preload mocks, shared test helpers, and the explicit test runner.
-- `nix/packages/sediment/`: patched Sediment package for `sediment-memory`.
 
 ## resource flow
 
@@ -58,7 +57,7 @@ Use `nix flake check` as the normal test entry point because the repository has 
 - Reconstruct persistent state from session entries when an extension reloads.
 - Keep each extension README accurate when its interface, configuration, lifecycle, or safety behavior changes.
 
-Match the existing extension before adding an abstraction. `sediment-memory` contains a stateful example. `clipboard` and `pi-to-PI` contain minimal examples.
+Match the existing extension before adding an abstraction. `sketch` starts and closes a long-lived resource. `clipboard` and `pi-to-PI` contain minimal examples.
 
 ## test conventions
 
@@ -87,8 +86,6 @@ Run `nix fmt` after Nix, TypeScript, Markdown, or JSON changes. The formatter us
 ## important constraints
 
 Extensions run in the Pi process with user permissions. Skills can direct an agent to execute commands. Do not weaken the security notes in `README.md`.
-
-`sediment-memory` requires `sediment` in `PATH`. The Home Manager selection must install or remove both together.
 
 The `ai-tells` skill requires `ai-tells` in `PATH`. The Home Manager selection must install or remove the `ai-tells` package with the skill.
 
