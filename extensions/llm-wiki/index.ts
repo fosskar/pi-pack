@@ -741,14 +741,14 @@ export default function llmWikiExtension(pi: ExtensionAPI) {
       "Mutations validate, commit, and push one complete operation. Output is limited to 50KB.",
     promptSnippet: "Read and update the configured Git-backed LLM wiki",
     promptGuidelines: [
-      "Use llm_wiki when the user asks to capture, ingest, query, or lint wiki knowledge, or to preserve a durable personal fact.",
+      "Use llm_wiki when the user asks to capture, ingest, query, or lint wiki knowledge; do not use the wiki as memory for user preferences or personal facts.",
       "Use llm_wiki for wiki repository access instead of direct Git commands or direct file mutation.",
       "Follow the Karpathy LLM Wiki pattern: preserve source material, maintain derived knowledge separately, search before creating pages, integrate new evidence, and keep provenance.",
       "Write OKF v0.2 concept documents as Markdown with YAML frontmatter and a non-empty type; preserve unknown types and fields, and use index.md and log.md only as reserved documents.",
       "Start each semantic operation with llm_wiki status, then read every reported guidance file before other wiki content.",
       "The repository is named llm-wiki; preserve immutable source material under raw/ and derived knowledge under wiki/.",
       "For llm_wiki apply, label each file as source, concept, index, log, or schema and submit every file for one complete semantic operation.",
-      "Preserve only non-sensitive personal facts stated by the user; never store secrets or inferred sensitive facts.",
+      "Never store secrets or inferred sensitive facts in the wiki.",
     ],
     parameters: Type.Object({
       action: StringEnum(["status", "search", "read", "apply"] as const),
